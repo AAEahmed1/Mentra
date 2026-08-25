@@ -55,7 +55,7 @@ export function OnboardingForm() {
       </Button>
 
       <Link
-        href="/dashboard"
+        href="/courses"
         className="text-center text-sm text-muted-foreground underline underline-offset-4"
       >
         Skip for now

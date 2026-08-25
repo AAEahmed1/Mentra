@@ -1,10 +1,14 @@
-import { defineConfig } from "vitest/config";
+import { loadEnv, defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-export default defineConfig({
-  plugins: [tsconfigPaths()],
-  test: {
-    environment: "node",
-    include: ["src/**/*.test.ts"],
-  },
+export default defineConfig(({ mode }) => {
+  Object.assign(process.env, loadEnv(mode, process.cwd(), ""));
+
+  return {
+    plugins: [tsconfigPaths()],
+    test: {
+      environment: "node",
+      include: ["src/**/*.test.ts"],
+    },
+  };
 });

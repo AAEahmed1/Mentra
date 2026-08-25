@@ -30,5 +30,5 @@ export async function completeOnboardingAction(
     data: result.data,
   });
 
-  redirect("/dashboard");
+  redirect("/courses");
 }

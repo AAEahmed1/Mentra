@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-25T00:00:00Z",
+  "title": "Design System: Mentra",
+  "extensions": {
+    "colorMeta": {
+      "rust-tab": {
+        "role": "primary",
+        "displayName": "Rust Tab",
+        "canonical": "oklch(0.53 0.15 35)",
+        "tonalRamp": [
+          "oklch(0.20 0.09 35)",
+          "oklch(0.30 0.12 35)",
+          "oklch(0.40 0.14 35)",
+          "oklch(0.53 0.15 35)",
+          "oklch(0.62 0.15 35)",
+          "oklch(0.72 0.13 35)",
+          "oklch(0.82 0.10 35)",
+          "oklch(0.93 0.05 35)"
+        ]
+      },
+      "teal-tab": {
+        "role": "secondary",
+        "displayName": "Muted Teal Tab",
+        "canonical": "oklch(0.45 0.06 175)",
+        "tonalRamp": [
+          "oklch(0.18 0.035 175)",
+          "oklch(0.27 0.05 175)",
+          "oklch(0.36 0.06 175)",
+          "oklch(0.45 0.06 175)",
+          "oklch(0.55 0.055 175)",
+          "oklch(0.65 0.045 175)",
+          "oklch(0.78 0.03 175)",
+          "oklch(0.92 0.015 175)"
+        ]
+      },
+      "drawer-taupe": {
+        "role": "neutral",
+        "displayName": "Drawer Taupe",
+        "canonical": "oklch(0.93 0.018 70)",
+        "tonalRamp": [
+          "oklch(0.19 0.016 50)",
+          "oklch(0.28 0.017 60)",
+          "oklch(0.4 0.018 65)",
+          "oklch(0.55 0.018 68)",
+          "oklch(0.7 0.018 70)",
+          "oklch(0.8 0.018 70)",
+          "oklch(0.89 0.017 70)",
+          "oklch(0.93 0.018 70)"
+        ]
+      },
+      "cardstock-cream": {
+        "role": "neutral",
+        "displayName": "Cardstock Cream",
+        "canonical": "oklch(0.985 0.012 80)",
+        "tonalRamp": [
+          "oklch(0.25 0.02 50)",
+          "oklch(0.35 0.018 60)",
+          "oklch(0.5 0.016 70)",
+          "oklch(0.65 0.014 75)",
+          "oklch(0.8 0.013 78)",
+          "oklch(0.9 0.012 80)",
+          "oklch(0.96 0.012 80)",
+          "oklch(0.985 0.012 80)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(0.24 0.02 55)",
+        "tonalRamp": [
+          "oklch(0.15 0.015 55)",
+          "oklch(0.24 0.02 55)",
+          "oklch(0.35 0.02 55)",
+          "oklch(0.48 0.02 60)",
+          "oklch(0.6 0.02 60)",
+          "oklch(0.72 0.015 65)",
+          "oklch(0.85 0.014 70)",
+          "oklch(0.93 0.014 75)"
+        ]
+      },
+      "destructive": {
+        "role": "destructive",
+        "displayName": "Destructive Red",
+        "canonical": "oklch(0.53 0.22 25)",
+        "tonalRamp": [
+          "oklch(0.22 0.13 25)",
+          "oklch(0.32 0.17 25)",
+          "oklch(0.42 0.2 25)",
+          "oklch(0.53 0.22 25)",
+          "oklch(0.62 0.21 25)",
+          "oklch(0.72 0.18 25)",
+          "oklch(0.83 0.12 25)",
+          "oklch(0.92 0.06 25)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Card Title / Headline",
+        "purpose": "IBM Plex Serif, card titles and page greetings only."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "IBM Plex Sans, reasoning text and general copy."
+      },
+      "metadata-mono": {
+        "displayName": "Stamped Metadata",
+        "purpose": "IBM Plex Mono, tabular-nums, for durations, percentages, due-in-days, semester date ranges, course code/professor/credits, and the index-tab code."
+      }
+    },
+    "shadows": [
+      { "name": "filed-lift", "value": "0 1px 2px oklch(0 0 0/0.06), 0 8px 24px -8px oklch(0 0 0/0.18)", "purpose": "Resting elevation for standalone card containers (auth shell, onboarding card, generic Card primitive, semester record cards)." },
+      { "name": "pulled-card-lift", "value": "0 1px 2px oklch(0 0 0/0.06), 0 12px 28px -10px oklch(0 0 0/0.22)", "purpose": "Deeper elevation reserved for the single pulled-forward recommendation card." }
+    ],
+    "motion": [
+      { "name": "pulled-card-settle", "value": "480ms cubic-bezier(0.16, 1, 0.3, 1), opacity 0->1, translateY(10px)->0, scale(0.98)->1", "purpose": "The one authored motion moment: the pulled card settling forward on mount. Disabled under prefers-reduced-motion: reduce." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Pulled Card",
+      "kind": "custom",
+      "refersTo": "card-filed",
+      "description": "The signature component: tonight's recommendation pulled forward out of a fanned rail, with an index tab and the pulled-card-settle motion.",
+      "html": "<div class=\"ds-pulled-wrap\"><div class=\"ds-ghost ds-ghost-1\"></div><div class=\"ds-ghost ds-ghost-2\"></div><div class=\"ds-pulled-card\"><div class=\"ds-index-tab\">NSEC</div><div class=\"ds-pulled-inner\"><div class=\"ds-punch\"><span></span><span></span><span></span></div><div class=\"ds-pulled-body\"><div class=\"ds-pulled-head\"><h3 class=\"ds-pulled-title\">Network Security Lab</h3><span class=\"ds-chip-due\">Due tomorrow</span></div><p class=\"ds-pulled-meta\">55 min &middot; 70% complete</p><p class=\"ds-pulled-reason\">Recommended because it's due tomorrow, 70% complete, and similar labs have taken you about 90 minutes.</p></div></div></div></div>",
+      "css": ".ds-pulled-wrap { position: relative; padding-bottom: 24px; font-family: 'IBM Plex Sans', sans-serif; } .ds-ghost { position: absolute; top: 6px; right: 8px; height: 100%; width: 92%; border-radius: 6px; border: 1px solid oklch(0.8 0.02 68); background: oklch(0.985 0.012 80); transform: rotate(3deg); opacity: 0.4; } .ds-ghost-2 { top: 12px; right: 4px; width: 96%; transform: rotate(1.5deg); opacity: 0.6; } .ds-pulled-card { position: relative; border-radius: 6px; border: 1px solid oklch(0.8 0.02 68); background: oklch(0.985 0.012 80); box-shadow: 0 1px 2px oklch(0 0 0/0.06), 0 12px 28px -10px oklch(0 0 0/0.22); animation: ds-pulled-settle 480ms cubic-bezier(0.16,1,0.3,1) both; } @keyframes ds-pulled-settle { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } } .ds-index-tab { position: absolute; top: -18px; left: 24px; height: 18px; width: 44px; display: flex; align-items: center; justify-content: center; border-radius: 4px 4px 0 0; border: 1px solid oklch(0.8 0.02 68); border-bottom: none; background: oklch(0.895 0.015 70); font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.02em; color: oklch(0.48 0.02 60); } .ds-pulled-inner { display: flex; align-items: flex-start; gap: 12px; padding: 20px; } .ds-punch { display: flex; flex-direction: column; gap: 6px; opacity: 0.4; margin-top: 4px; } .ds-punch span { width: 4px; height: 4px; border-radius: 999px; background: oklch(0.24 0.02 55); } .ds-pulled-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; } .ds-pulled-title { font-family: 'IBM Plex Serif', serif; font-size: 18px; font-weight: 600; line-height: 1.3; color: oklch(0.24 0.02 55); } .ds-chip-due { border-radius: 999px; background: oklch(0.53 0.15 35); color: oklch(0.99 0.008 80); font-size: 12px; font-weight: 500; padding: 4px 10px; white-space: nowrap; } .ds-pulled-meta { margin-top: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: oklch(0.48 0.02 60); font-variant-numeric: tabular-nums; } .ds-pulled-reason { margin-top: 12px; font-size: 14px; color: oklch(0.48 0.02 60); }"
+    },
+    {
+      "name": "Tab Chip - Due",
+      "kind": "chip",
+      "refersTo": "chip-tab-due",
+      "description": "The rust 'due soon' status chip.",
+      "html": "<span class=\"ds-chip ds-chip-due\">Due soon</span>",
+      "css": ".ds-chip { display: inline-block; border-radius: 999px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 500; padding: 2px 8px; white-space: nowrap; } .ds-chip-due { background: oklch(0.53 0.15 35); color: oklch(0.99 0.008 80); }"
+    },
+    {
+      "name": "Tab Chip - On Track",
+      "kind": "chip",
+      "refersTo": "chip-tab-ontrack",
+      "description": "The muted teal 'on track' status chip.",
+      "html": "<span class=\"ds-chip ds-chip-ontrack\">On track</span>",
+      "css": ".ds-chip-ontrack { display: inline-block; border-radius: 999px; background: oklch(0.45 0.06 175); color: oklch(0.97 0.01 170); font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 500; padding: 2px 8px; white-space: nowrap; }"
+    },
+    {
+      "name": "Filed Card Shell",
+      "kind": "card",
+      "refersTo": "card-filed",
+      "description": "The generic top-level card container used by auth shell, onboarding, and semester records, with the three-dot punch mark header.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><div class=\"ds-punch\"><span></span><span></span><span></span></div><div><h1 class=\"ds-card-title\">Welcome back</h1><p class=\"ds-card-desc\">Sign in to Mentra.</p></div></div><div class=\"ds-card-body\"></div></div>",
+      "css": ".ds-card { border-radius: 6px; border: 1px solid oklch(0.8 0.02 68); background: oklch(0.985 0.012 80); box-shadow: 0 1px 2px oklch(0 0 0/0.06), 0 8px 24px -8px oklch(0 0 0/0.18); overflow: hidden; font-family: 'IBM Plex Sans', sans-serif; } .ds-card-head { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid oklch(0.8 0.02 68); padding: 20px 24px; } .ds-punch { display: flex; flex-direction: column; gap: 6px; opacity: 0.4; } .ds-punch span { width: 4px; height: 4px; border-radius: 999px; background: oklch(0.24 0.02 55); } .ds-card-title { font-family: 'IBM Plex Serif', serif; font-size: 18px; font-weight: 600; line-height: 1.3; color: oklch(0.24 0.02 55); } .ds-card-desc { margin-top: 2px; font-size: 14px; color: oklch(0.48 0.02 60); } .ds-card-body { padding: 24px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Rust-filled primary action button.",
+      "html": "<button class=\"ds-btn-primary\">Continue</button>",
+      "css": ".ds-btn-primary { background: oklch(0.53 0.15 35); color: oklch(0.99 0.008 80); font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500; padding: 0 10px; height: 32px; border-radius: 6px; border: none; transition: background 0.15s; } .ds-btn-primary:hover { background: color-mix(in oklch, oklch(0.53 0.15 35) 80%, transparent); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.53 0.15 35 / 0.5); }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Tinted (not solid) destructive button reserved for guarded/consequential deletion, e.g. deleting a semester that may still contain courses.",
+      "html": "<button class=\"ds-btn-destructive\">Delete semester</button>",
+      "css": ".ds-btn-destructive { background: oklch(0.53 0.22 25 / 0.1); color: oklch(0.53 0.22 25); font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500; padding: 0 10px; height: 32px; border-radius: 6px; border: none; transition: background 0.15s; } .ds-btn-destructive:hover { background: oklch(0.53 0.22 25 / 0.2); } .ds-btn-destructive:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.53 0.22 25 / 0.2); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Plain hairline-bordered field used across auth, onboarding, semester, and course forms. No card-catalog-specific decoration; rounded-lg matches the card corner radius.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-label\" for=\"ds-name\">Semester name</label><input class=\"ds-input\" id=\"ds-name\" placeholder=\"e.g. Fall 2026\" /></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 8px; font-family: 'IBM Plex Sans', sans-serif; } .ds-label { font-size: 14px; font-weight: 500; color: oklch(0.24 0.02 55); } .ds-input { height: 32px; width: 100%; border-radius: 6px; border: 1px solid oklch(0.8 0.02 68); background: transparent; padding: 4px 10px; font-size: 14px; color: oklch(0.24 0.02 55); outline: none; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input::placeholder { color: oklch(0.48 0.02 60); } .ds-input:focus-visible { border-color: oklch(0.53 0.15 35); box-shadow: 0 0 0 3px oklch(0.53 0.15 35 / 0.5); } .ds-input[aria-invalid='true'] { border-color: oklch(0.53 0.22 25); box-shadow: 0 0 0 3px oklch(0.53 0.22 25 / 0.2); }"
+    },
+    {
+      "name": "Add-New Slot",
+      "kind": "custom",
+      "refersTo": "card-add-new",
+      "description": "Dashed-border, unfilled, shadowless action container for creating a new filed record (e.g. 'Add a semester'). Deliberately distinct from a Card so it reads as an action, not a record.",
+      "html": "<div class=\"ds-add-slot\"><h2 class=\"ds-add-slot-heading\">Add a semester</h2><div class=\"ds-add-slot-body\"></div></div>",
+      "css": ".ds-add-slot { border-radius: 6px; border: 1px dashed oklch(0.8 0.02 68); background: transparent; box-shadow: none; padding: 20px; font-family: 'IBM Plex Sans', sans-serif; } .ds-add-slot-heading { margin-bottom: 16px; font-size: 14px; font-weight: 500; color: oklch(0.48 0.02 60); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Card Catalog",
+    "overview": "Mentra reads as a drawer of filed index cards, not a dashboard of panels. The governing object is the card: cream card-stock, a punched index tab, a short life on top of a fanned stack. The thesis is literal in the built dashboard — tonight's recommendation is not a list row, it is a single card physically pulled forward out of the rail, with the rest of the filed stack peeking from behind and below it in strict order. Nothing on screen claims urgency by decoration; urgency is expressed by position (pulled to the front) and by a two-color tab system (rust for due soon, muted teal for on track), never by an invented badge shape. The material world is warm and archival: card-stock cream over a taupe 'drawer' ground in light mode, warm charcoal with lamp-glow cards at night. Three IBM Plex faces do the type work with no additional families: Serif for headers (the card's typed title), Mono for metadata (the card's stamped facts — duration, percent complete, due-in-days), Sans for body copy (the card's handwritten reasoning). The courses page confirms the catalog thesis extends to CRUD: filed records (semesters) are Cards with the punched three-dot device and a nested bordered list of courses, while creating a new record uses a deliberately unfilled dashed action slot instead of another Card.",
+    "keyCharacteristics": [
+      "One card, pulled forward, is the unit of the whole system — not a grid, not a table.",
+      "Two-tab color vocabulary only: rust for due-soon, teal for on-track. No third tab color exists.",
+      "IBM Plex Serif / Mono / Sans, one job each, never swapped.",
+      "Filed cards behind the pulled card are represented by rotation and opacity, not by content — they are the fan, not a preview.",
+      "A single authored motion moment (the pulled-card settle) marks the one thing the direction cares about; nothing else animates.",
+      "Filed records are Cards; the action that creates a new one is a visually distinct, unfilled dashed slot — never a Card impersonating a record."
+    ],
+    "rules": [
+      { "name": "The Two-Tab Rule", "body": "Status color is expressed only through the rust/teal tab pair (--tab-due / --tab-ontrack). No third status color, and no status is ever conveyed by a bare colored dot, icon, or badge shape outside these two chips.", "section": "colors" },
+      { "name": "The One Saturated Color Rule", "body": "Rust is the only high-chroma color on any screen — it carries primary actions, the due-soon tab, and the focus ring simultaneously so a student never has to learn a second 'important' color. Destructive red is the sole confirmed exception, and only ever on a delete control or an error message, never a status or emphasis device.", "section": "colors" },
+      { "name": "The One Job Per Face Rule", "body": "Serif is for titles only, Mono is for stamped facts only, Sans is for everything else. No face substitutes for another's job, even at small sizes.", "section": "typography" },
+      { "name": "The Responsive Field-Row Rule", "body": "A form row of three or more fields stacks to a single column below sm and expands to one row at sm and above (grid-cols-1 sm:grid-cols-3). A two-field row stays fixed grid-cols-2 with no responsive stacking, since two fields fit any supported viewport.", "section": "layout" },
+      { "name": "The Pull Reads as Lift Rule", "body": "Depth is used narratively: the more 'pulled forward' a card is, the deeper its shadow. Rows inside the filed list below it carry no shadow at all — they're still in the drawer.", "section": "elevation" },
+      { "name": "The Action Slot Stays Flat Rule", "body": "A container whose job is to create a new filed record (not display one) carries no shadow and no fill. Depth is reserved for records that already exist.", "section": "elevation" },
+      { "name": "The Destructive Weight Matches Consequence Rule", "body": "Button emphasis for a removal action scales with how consequential and reversible it is: guarded/hard-to-undo deletions (deleting a semester with courses) get the tinted destructive treatment; low-stakes, trivially reversible removals (removing a single course) stay ghost. Destructive red is earned by real consequence, not applied to every delete by default.", "section": "components" }
+    ],
+    "dos": [
+      "Do express status only through the rust/teal tab pair; never introduce a third status color.",
+      "Do reserve the deeper 'pulled-card' shadow for the single forward-pulled item on a screen; everything else uses the shallower 'filed' shadow or no shadow.",
+      "Do use IBM Plex Serif for titles/headlines, Mono for stamped metadata (with tabular-nums), and Sans for everything else — one face, one job.",
+      "Do keep the three-dot 'punched hole' mark as the recurring catalog-card affordance on top-level card headers.",
+      "Do apply the .bg-cardstock grain texture only to card interiors, kept subtle enough not to affect text contrast.",
+      "Do use the dashed, unfilled 'add-new slot' (not a Card) for any container whose job is creating a new filed record.",
+      "Do match destructive-button weight to actual consequence: tinted destructive for guarded/hard-to-undo removals, ghost for low-stakes, reversible ones.",
+      "Do stack a form row to one column below sm once it holds three or more fields; a two-field row may stay fixed-width."
+    ],
+    "donts": [
+      "Don't fan more than the single pulled-forward card — the ghost-card rotation/opacity technique represents 'cards behind the front one,' not a general list-decoration device; ordinary filed rows stay flat with a hairline border, no rotation.",
+      "Don't add a neutral/unselected chip variant to the tab system — a chip is always due or on-track; if a third state is needed, it needs its own named rule, not a silent third color.",
+      "Don't introduce a second saturated accent color; rust remains the system's only high-chroma color. Destructive red is not a second accent — it only ever attaches to a delete control or an error state.",
+      "Don't use sharp, unrounded corners or heavy pill radius on cards, rows, or inputs — the base rounded-lg (~4.8px) card-corner value is the standard; pill radius is reserved for chips and icon-only controls.",
+      "Don't give every delete action the destructive-red treatment by default; reserve it for actions that are actually guarded or consequential, or the color stops meaning anything."
+    ]
+  }
+}

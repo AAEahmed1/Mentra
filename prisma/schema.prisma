@@ -24,9 +24,41 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  semesters     Semester[]
 
   @@unique([email])
   @@map("user")
+}
+
+model Semester {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+
+  @@index([userId])
+  @@map("semester")
+}
+
+model Course {
+  id         String   @id @default(cuid())
+  semesterId String
+  semester   Semester @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  name       String
+  code       String?
+  professor  String?
+  credits    Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([semesterId])
+  @@map("course")
 }
 
 model Session {
