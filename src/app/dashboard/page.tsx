@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { greetingForHour } from "@/lib/greeting";
 import { listTasksForUser } from "@/lib/services/task";
 import { listCoursesForUser } from "@/lib/services/course";
+import { listNotesForUser } from "@/lib/services/note";
 import { rankTasks, type RankedTask } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
 import { TermScore } from "@/components/term-score";
@@ -78,16 +79,28 @@ export default async function DashboardPage() {
   const userId = await requireUserId();
   const now = new Date();
 
-  const [user, tasks, courses] = await Promise.all([
+  const [user, tasks, courses, notes] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, program: true },
     }),
     listTasksForUser(userId),
     listCoursesForUser(userId),
+    listNotesForUser(userId),
   ]);
 
   const courseById = new Map(courses.map((course) => [course.id, course]));
+
+  // How many notes hang off each piece of work, for the score's hover detail.
+  const noteCountByTaskId = new Map<string, number>();
+  for (const note of notes) {
+    if (note.taskId) {
+      noteCountByTaskId.set(
+        note.taskId,
+        (noteCountByTaskId.get(note.taskId) ?? 0) + 1
+      );
+    }
+  }
   const ranked = rankTasks(tasks, { now });
   const [struck, ...rest] = ranked;
   const lanes = rest.slice(0, LANE_LIMIT);
@@ -122,6 +135,7 @@ export default async function DashboardPage() {
           courseNameById={
             new Map(courses.map((course) => [course.id, course.name]))
           }
+          noteCountByTaskId={noteCountByTaskId}
           now={now}
         />
       )}

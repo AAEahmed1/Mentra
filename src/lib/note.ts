@@ -10,6 +10,7 @@ const noteSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   body: z.string().trim().min(1, "Body is required"),
   courseId: z.preprocess(blankToUndefined, z.string().trim().optional()),
+  taskId: z.preprocess(blankToUndefined, z.string().trim().optional()),
 });
 
 export type NoteInput = z.infer<typeof noteSchema>;
@@ -22,6 +23,7 @@ export function parseNoteInput(input: {
   title: FormDataEntryValue | null;
   body: FormDataEntryValue | null;
   courseId: FormDataEntryValue | null;
+  taskId: FormDataEntryValue | null;
 }): NoteResult {
   const result = noteSchema.safeParse(input);
 

@@ -3,7 +3,7 @@
 import { updateTaskAction, completeTaskAction, deleteTaskAction } from "@/lib/actions/task";
 import { useInlineEdit, useRowAction } from "@/lib/use-row-actions";
 import { getEffectiveStatus } from "@/lib/task-status";
-import type { Task } from "@/generated/prisma/client";
+import type { Note, Task } from "@/generated/prisma/client";
 import {
   EditActions,
   FiledRow,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { QuickNoteForm } from "@/components/tasks/quick-note-form";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -35,10 +36,12 @@ type CourseOption = { id: string; name: string };
 export function TaskRow({
   task,
   courseName,
+  notes,
   courses,
 }: {
   task: Task;
   courseName: string | null;
+  notes: Note[];
   courses: CourseOption[];
 }) {
   const edit = useInlineEdit(updateTaskAction);
@@ -96,7 +99,7 @@ export function TaskRow({
           </>
         }
       >
-        <div>
+        <div className="min-w-0 flex-1">
           <p
             className={
               isResolved
@@ -118,6 +121,56 @@ export function TaskRow({
               </span>
             )}
           </div>
+
+          {/*
+            Always present, because a note can be written about any piece of
+            work — not only the ones that already have some. A disclosure
+            rather than always-open: a row with three notes would otherwise
+            push every other piece of work off the screen. <details> gives the
+            toggle and its keyboard behaviour for free.
+          */}
+          <details className="group/notes mt-2">
+              {/*
+                Styled as a button rather than plain text: the count is worth
+                seeing while scanning, so it stays visible at rest instead of
+                joining the hover-revealed actions — but it has to look like
+                something you can press.
+              */}
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 select-none rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+                <svg
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="size-3 transition-transform group-open/notes:rotate-90"
+                >
+                  <polyline points="4.5,2.5 8,6 4.5,9.5" />
+                </svg>
+                {notes.length === 0
+                  ? "Add a note"
+                  : `${notes.length} note${notes.length === 1 ? "" : "s"}`}
+              </summary>
+
+              <div className="mt-2 flex max-w-[58ch] flex-col gap-4 border-l border-rule pl-3">
+                {notes.length > 0 && (
+                  <ul className="flex flex-col gap-3">
+                    {notes.map((note) => (
+                      <li key={note.id}>
+                        <p className="text-xs font-medium">{note.title}</p>
+                        <p className="mt-0.5 text-xs whitespace-pre-wrap text-muted-foreground">
+                          {note.body}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <QuickNoteForm taskId={task.id} />
+              </div>
+            </details>
         </div>
       </FiledRow>
     );

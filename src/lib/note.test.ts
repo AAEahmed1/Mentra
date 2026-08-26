@@ -5,6 +5,7 @@ const baseInput = {
   title: "Subnetting cheatsheet",
   body: "A /24 gives 254 usable hosts.",
   courseId: null,
+  taskId: null,
 };
 
 describe("parseNoteInput", () => {
@@ -17,6 +18,7 @@ describe("parseNoteInput", () => {
         title: "Subnetting cheatsheet",
         body: "A /24 gives 254 usable hosts.",
         courseId: undefined,
+        taskId: undefined,
       },
     });
   });
@@ -49,5 +51,17 @@ describe("parseNoteInput", () => {
     const result = parseNoteInput({ ...baseInput, courseId: "course_123" });
 
     expect(result.success && result.data.courseId).toBe("course_123");
+  });
+
+  test("treats a blank taskId as unattached (undefined)", () => {
+    const result = parseNoteInput({ ...baseInput, taskId: "" });
+
+    expect(result.success && result.data.taskId).toBeUndefined();
+  });
+
+  test("keeps a provided taskId, so a note can belong to one piece of work", () => {
+    const result = parseNoteInput({ ...baseInput, taskId: "task_123" });
+
+    expect(result.success && result.data.taskId).toBe("task_123");
   });
 });

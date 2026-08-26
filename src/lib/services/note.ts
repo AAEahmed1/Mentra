@@ -4,19 +4,41 @@ import type { NoteInput } from "@/lib/note";
 
 export type CreateNoteResult =
   | { success: true; data: Note }
-  | { success: false; error: "course_not_found" };
+  | { success: false; error: "course_not_found" | "task_not_found" };
+
+/**
+ * A note may name a course and a task, and neither may belong to anyone else.
+ * The ids arrive from a form the student controls, so ownership is proven here
+ * rather than trusted.
+ */
+async function rejectForeignLinks(
+  userId: string,
+  data: Pick<NoteInput, "courseId" | "taskId">
+): Promise<"course_not_found" | "task_not_found" | null> {
+  if (data.courseId) {
+    const course = await prisma.course.findFirst({
+      where: { id: data.courseId, semester: { userId } },
+    });
+    if (!course) return "course_not_found";
+  }
+
+  if (data.taskId) {
+    const task = await prisma.task.findFirst({
+      where: { id: data.taskId, userId },
+    });
+    if (!task) return "task_not_found";
+  }
+
+  return null;
+}
 
 export async function createNote(
   userId: string,
   data: NoteInput
 ): Promise<CreateNoteResult> {
-  if (data.courseId) {
-    const course = await prisma.course.findFirst({
-      where: { id: data.courseId, semester: { userId } },
-    });
-    if (!course) {
-      return { success: false, error: "course_not_found" };
-    }
+  const rejection = await rejectForeignLinks(userId, data);
+  if (rejection) {
+    return { success: false, error: rejection };
   }
 
   const note = await prisma.note.create({
@@ -57,13 +79,18 @@ export function searchNotesForUser(
 
 export type UpdateNoteResult =
   | { success: true; data: Note }
-  | { success: false; error: "not_found" };
+  | { success: false; error: "not_found" | "course_not_found" | "task_not_found" };
 
 export async function updateNote(
   userId: string,
   noteId: string,
   data: Partial<NoteInput>
 ): Promise<UpdateNoteResult> {
+  const rejection = await rejectForeignLinks(userId, data);
+  if (rejection) {
+    return { success: false, error: rejection };
+  }
+
   const { count } = await prisma.note.updateMany({
     where: { id: noteId, userId },
     data,

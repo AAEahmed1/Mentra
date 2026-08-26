@@ -10,11 +10,21 @@ export type NoteActionState = {
   errors: string[];
 };
 
+/** Name which link failed, so the student knows what to change. */
+function linkError(
+  error: "not_found" | "course_not_found" | "task_not_found"
+): string {
+  if (error === "course_not_found") return "That course no longer exists.";
+  if (error === "task_not_found") return "That piece of work no longer exists.";
+  return "That note no longer exists.";
+}
+
 function readNoteFormFields(formData: FormData) {
   return {
     title: formData.get("title"),
     body: formData.get("body"),
     courseId: formData.get("courseId"),
+    taskId: formData.get("taskId"),
   };
 }
 
@@ -31,10 +41,12 @@ export async function createNoteAction(
 
   const created = await createNote(userId, result.data);
   if (!created.success) {
-    return { errors: ["Course not found."] };
+    return { errors: [linkError(created.error)] };
   }
 
   revalidatePath("/notes");
+  revalidatePath("/dashboard");
+  revalidatePath("/tasks");
   return { errors: [] };
 }
 
@@ -52,10 +64,12 @@ export async function updateNoteAction(
 
   const updated = await updateNote(userId, noteId, result.data);
   if (!updated.success) {
-    return { errors: ["Note not found."] };
+    return { errors: [linkError(updated.error)] };
   }
 
   revalidatePath("/notes");
+  revalidatePath("/dashboard");
+  revalidatePath("/tasks");
   return { errors: [] };
 }
 
@@ -65,4 +79,6 @@ export async function deleteNoteAction(formData: FormData): Promise<void> {
 
   await deleteNote(userId, noteId);
   revalidatePath("/notes");
+  revalidatePath("/dashboard");
+  revalidatePath("/tasks");
 }

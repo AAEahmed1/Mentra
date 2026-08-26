@@ -64,6 +64,10 @@ model Note {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseId  String?
   course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  // A note outlives the work it was written against: deleting a task detaches
+  // the note rather than destroying the student's own thinking.
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
   title     String
   body      String
   createdAt DateTime @default(now())
@@ -71,6 +75,7 @@ model Note {
 
   @@index([userId])
   @@index([courseId])
+  @@index([taskId])
   @@map("note")
 }
 
@@ -111,6 +116,8 @@ model Task {
   topicsToReview    String?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
+
+  notes Note[]
 
   @@index([userId])
   @@index([courseId])

@@ -8,12 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { WorkOption } from "@/lib/work-options";
 
 const initialState: NoteActionState = { errors: [] };
 
 type CourseOption = { id: string; name: string };
 
-export function CreateNoteForm({ courses }: { courses: CourseOption[] }) {
+export function CreateNoteForm({
+  courses,
+  work,
+}: {
+  courses: CourseOption[];
+  work: WorkOption[];
+}) {
   const [state, formAction, isPending] = useActionState(
     createNoteAction,
     initialState
@@ -45,6 +52,22 @@ export function CreateNoteForm({ courses }: { courses: CourseOption[] }) {
           {courses.map((course) => (
             <option key={course.id} value={course.id}>
               {course.name}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={"note-task"}>
+          About a piece of work{" "}
+          <span className="text-muted-foreground">(optional)</span>
+        </Label>
+        <Select id={"note-task"} name="taskId" defaultValue={""}>
+          <option value="">Not about anything in particular</option>
+          {work.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.title} — {item.detail}
             </option>
           ))}
         </Select>

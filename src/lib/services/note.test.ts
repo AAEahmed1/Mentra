@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { createSemester } from "@/lib/services/semester";
 import { createCourse } from "@/lib/services/course";
+import { createTask } from "@/lib/services/task";
 import {
   createNote,
   deleteNote,
@@ -54,6 +55,7 @@ describe("createNote", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId,
+      taskId: undefined,
     });
 
     expect(result.success).toBe(true);
@@ -69,6 +71,7 @@ describe("createNote", () => {
       title: "Random thought",
       body: "Study earlier in the day.",
       courseId: undefined,
+      taskId: undefined,
     });
 
     expect(result.success).toBe(true);
@@ -100,6 +103,7 @@ describe("createNote", () => {
       title: "Hijacked note",
       body: "Should not be created.",
       courseId: otherCourse.data.id,
+      taskId: undefined,
     });
 
     expect(result).toEqual({ success: false, error: "course_not_found" });
@@ -116,6 +120,7 @@ describe("listNotesForUser", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
 
     const notes = await listNotesForUser(userId);
@@ -131,6 +136,7 @@ describe("searchNotesForUser", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
 
     const notes = await searchNotesForUser(userId, "subnetting");
@@ -144,6 +150,7 @@ describe("searchNotesForUser", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
 
     const notes = await searchNotesForUser(userId, "usable hosts");
@@ -156,6 +163,7 @@ describe("searchNotesForUser", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
 
     const notes = await searchNotesForUser(userId, "SUBNETTING");
@@ -168,11 +176,13 @@ describe("searchNotesForUser", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
     await createNote(userId, {
       title: "Cryptography basics",
       body: "RSA uses asymmetric keys.",
       courseId: undefined,
+      taskId: undefined,
     });
 
     const notes = await searchNotesForUser(userId, "subnetting");
@@ -210,11 +220,13 @@ describe("searchNotesForUser", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
     await createNote(userId, {
       title: "Cryptography basics",
       body: "RSA uses asymmetric keys.",
       courseId: undefined,
+      taskId: undefined,
     });
 
     const notes = await searchNotesForUser(userId, "   ");
@@ -229,6 +241,7 @@ describe("updateNote", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
     if (!created.success) throw new Error("fixture creation failed");
 
@@ -273,6 +286,7 @@ describe("deleteNote", () => {
       title: "Subnetting cheatsheet",
       body: "A /24 gives 254 usable hosts.",
       courseId: undefined,
+      taskId: undefined,
     });
     if (!created.success) throw new Error("fixture creation failed");
 
@@ -283,5 +297,86 @@ describe("deleteNote", () => {
       where: { id: created.data.id },
     });
     expect(found).toBeNull();
+  });
+});
+
+describe("createNote — attaching to a piece of work", () => {
+  test("attaches a note to a task owned by the given user", async () => {
+    const task = await createTask(userId, {
+      title: "Drug calculations worksheet",
+      description: undefined,
+      dueDate: undefined,
+      priority: "medium",
+      estimatedDuration: undefined,
+      type: "task",
+      topicsToReview: undefined,
+      courseId: undefined,
+    });
+    if (!task.success) throw new Error("fixture creation failed");
+
+    const result = await createNote(userId, {
+      title: "Watch the units",
+      body: "mg vs mcg is where the mistakes came from.",
+      courseId: undefined,
+      taskId: task.data.id,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.taskId).toBe(task.data.id);
+  });
+
+  test("refuses to attach a note to another student's task", async () => {
+    const otherUser = await prisma.user.create({
+      data: {
+        name: "Other Student",
+        email: `test-note-other-${randomUUID()}@example.com`,
+        emailVerified: true,
+      },
+    });
+    const otherTask = await prisma.task.create({
+      data: { userId: otherUser.id, title: "Other's task" },
+    });
+
+    const result = await createNote(userId, {
+      title: "Hijacked note",
+      body: "Should not attach.",
+      courseId: undefined,
+      taskId: otherTask.id,
+    });
+
+    expect(result).toEqual({ success: false, error: "task_not_found" });
+
+    await prisma.task.delete({ where: { id: otherTask.id } });
+    await prisma.user.delete({ where: { id: otherUser.id } });
+  });
+
+  test("keeps the note when the work it was attached to is deleted", async () => {
+    const task = await createTask(userId, {
+      title: "Ward simulation prep",
+      description: undefined,
+      dueDate: undefined,
+      priority: "medium",
+      estimatedDuration: undefined,
+      type: "task",
+      topicsToReview: undefined,
+      courseId: undefined,
+    });
+    if (!task.success) throw new Error("fixture creation failed");
+
+    const note = await createNote(userId, {
+      title: "Handover structure",
+      body: "Situation, background, assessment, recommendation.",
+      courseId: undefined,
+      taskId: task.data.id,
+    });
+    if (!note.success) throw new Error("fixture creation failed");
+
+    await prisma.task.delete({ where: { id: task.data.id } });
+
+    const survivor = await prisma.note.findUnique({
+      where: { id: note.data.id },
+    });
+    expect(survivor).not.toBeNull();
+    expect(survivor?.taskId).toBeNull();
   });
 });

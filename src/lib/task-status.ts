@@ -8,6 +8,14 @@ const OPEN_STATUSES: readonly TaskStatus[] = [
   "paused",
 ];
 
+function startOfDay(date: Date): number {
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate()
+  );
+}
+
 export function getEffectiveStatus(
   status: TaskStatus,
   dueDate: Date | null,
@@ -17,7 +25,10 @@ export function getEffectiveStatus(
     return status;
   }
 
-  if (dueDate && dueDate.getTime() < now.getTime()) {
+  // Calendar days, not elapsed hours: work due at 9am is not overdue at noon,
+  // it is due today. Comparing timestamps put the amber "overdue" mark on work
+  // whose own counter still read "Today", and the two must never disagree.
+  if (dueDate && startOfDay(dueDate) < startOfDay(now)) {
     return "overdue";
   }
 

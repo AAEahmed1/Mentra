@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { WorkOption } from "@/lib/work-options";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -27,11 +28,15 @@ type CourseOption = { id: string; name: string };
 export function NoteRow({
   note,
   courseName,
+  workTitle,
   courses,
+  work,
 }: {
   note: Note;
   courseName: string | null;
+  workTitle: string | null;
   courses: CourseOption[];
+  work: WorkOption[];
 }) {
   const edit = useInlineEdit(updateNoteAction);
   const remove = useRowAction(deleteNoteAction);
@@ -66,6 +71,12 @@ export function NoteRow({
           <div className="mt-0.5">
             <RowMeta>{metadata}</RowMeta>
           </div>
+          {workTitle && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              About{" "}
+              <span className="text-foreground">{workTitle}</span>
+            </p>
+          )}
           <p className="mt-2 max-w-[58ch] text-sm whitespace-pre-wrap text-muted-foreground">
             {note.body}
           </p>
@@ -113,6 +124,25 @@ export function NoteRow({
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={`edit-note-task-${note.id}`}>
+            About a piece of work{" "}
+            <span className="text-muted-foreground">(optional)</span>
+          </Label>
+          <Select
+            id={`edit-note-task-${note.id}`}
+            name="taskId"
+            defaultValue={note.taskId ?? ""}
+          >
+            <option value="">Not about anything in particular</option>
+            {work.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.title} — {item.detail}
               </option>
             ))}
           </Select>

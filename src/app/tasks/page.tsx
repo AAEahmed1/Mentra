@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
 import { listTasksForUser } from "@/lib/services/task";
 import { listCoursesForUser } from "@/lib/services/course";
+import { listNotesForUser } from "@/lib/services/note";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { TaskRow } from "@/components/tasks/task-row";
 
@@ -13,10 +14,21 @@ export const metadata: Metadata = {
 
 export default async function TasksPage() {
   const userId = await requireUserId();
-  const [tasks, courses] = await Promise.all([
+  const [tasks, courses, notes] = await Promise.all([
     listTasksForUser(userId),
     listCoursesForUser(userId),
+    listNotesForUser(userId),
   ]);
+
+  // The notes hanging off each piece of work, so a row can show what you
+  // already wrote about it without a second trip to the notes page.
+  const notesByTaskId = new Map<string, typeof notes>();
+  for (const note of notes) {
+    if (!note.taskId) continue;
+    const existing = notesByTaskId.get(note.taskId);
+    if (existing) existing.push(note);
+    else notesByTaskId.set(note.taskId, [note]);
+  }
 
   const courseNameById = new Map(courses.map((course) => [course.id, course.name]));
   const courseOptions = courses.map((course) => ({
@@ -40,6 +52,7 @@ export default async function TasksPage() {
                   ? (courseNameById.get(task.courseId) ?? null)
                   : null
               }
+              notes={notesByTaskId.get(task.id) ?? []}
               courses={courseOptions}
             />
           ))}

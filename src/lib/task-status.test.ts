@@ -39,4 +39,24 @@ describe("getEffectiveStatus", () => {
   test("a due date exactly at the current moment is not yet overdue", () => {
     expect(getEffectiveStatus("not_started", now, now)).toBe("not_started");
   });
+
+  test("work due earlier today is not overdue — the day has not ended", () => {
+    // The regression this guards: comparing timestamps rather than calendar
+    // days made anything due this morning read as overdue by lunchtime, while
+    // its own day counter still said "Today".
+    const dueThisMorning = new Date("2026-09-10T09:00:00Z");
+
+    expect(getEffectiveStatus("not_started", dueThisMorning, now)).toBe(
+      "not_started"
+    );
+  });
+
+  test("work due yesterday is overdue however late in the day it is read", () => {
+    const lateYesterday = new Date("2026-09-09T23:59:00Z");
+    const earlyToday = new Date("2026-09-10T00:30:00Z");
+
+    expect(getEffectiveStatus("not_started", lateYesterday, earlyToday)).toBe(
+      "overdue"
+    );
+  });
 });

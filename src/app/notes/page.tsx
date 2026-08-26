@@ -5,6 +5,8 @@ import { requireUserId } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
 import { searchNotesForUser } from "@/lib/services/note";
 import { listCoursesForUser } from "@/lib/services/course";
+import { listTasksForUser } from "@/lib/services/task";
+import { toWorkOptions } from "@/lib/work-options";
 import { CreateNoteForm } from "@/components/notes/create-note-form";
 import { NoteRow } from "@/components/notes/note-row";
 import { Button } from "@/components/ui/button";
@@ -21,9 +23,10 @@ export default async function NotesPage({
   const { q } = await searchParams;
   const query = typeof q === "string" ? q : "";
 
-  const [notes, courses] = await Promise.all([
+  const [notes, courses, tasks] = await Promise.all([
     searchNotesForUser(userId, query),
     listCoursesForUser(userId),
+    listTasksForUser(userId),
   ]);
 
   const courseNameById = new Map(
@@ -33,6 +36,8 @@ export default async function NotesPage({
     id: course.id,
     name: course.name,
   }));
+  const work = toWorkOptions(tasks, courseNameById, new Date());
+  const workTitleById = new Map(tasks.map((task) => [task.id, task.title]));
 
   return (
     <AppShell
@@ -76,7 +81,11 @@ export default async function NotesPage({
                   ? (courseNameById.get(note.courseId) ?? null)
                   : null
               }
+              workTitle={
+                note.taskId ? (workTitleById.get(note.taskId) ?? null) : null
+              }
               courses={courseOptions}
+              work={work}
             />
           ))}
         </ul>
@@ -92,7 +101,7 @@ export default async function NotesPage({
         <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
           Add a note
         </h2>
-        <CreateNoteForm courses={courseOptions} />
+        <CreateNoteForm courses={courseOptions} work={work} />
       </section>
     </AppShell>
   );

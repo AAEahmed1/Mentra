@@ -1,7 +1,16 @@
 import type { RankableTask, RankedTask } from "@/lib/recommendations";
+import type { TaskStatus } from "@/generated/prisma/enums";
 
 /** Ranking itself doesn't care which course a task belongs to; the lanes do. */
 type LaneTask = RankableTask & { courseId: string | null };
+
+const STATUS_WORD: Record<TaskStatus, string> = {
+  not_started: "Not started",
+  in_progress: "In progress",
+  paused: "Paused",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
 
 /**
  * The score itself: every course a line, all read against one timeline.
@@ -59,10 +68,12 @@ function widthPercent(minutes: number | null): number {
 export function TermScore({
   ranked,
   courseNameById,
+  noteCountByTaskId,
   now,
 }: {
   ranked: RankedTask<LaneTask>[];
   courseNameById: Map<string, string>;
+  noteCountByTaskId: Map<string, number>;
   now: Date;
 }) {
   // Only dated work can sit on the timeline; undated work has no position and
@@ -103,7 +114,7 @@ export function TermScore({
         <span aria-hidden="true" className="h-px flex-1 bg-rule" />
       </div>
 
-      <div className="mt-5 grid grid-cols-[12rem_1fr] gap-x-4">
+      <div className="mt-5 grid grid-cols-[12rem_1fr] gap-x-4 overflow-visible">
         {/* The ruler every lane is read against. */}
         <div />
         <div className="relative h-5 border-b border-rule">
@@ -144,28 +155,74 @@ export function TermScore({
               {lane.entries.map((entry) => {
                 const days = entry.factors.daysUntilDue as number;
                 const overdue = entry.factors.urgency === "overdue";
+                const noteCount = noteCountByTaskId.get(entry.task.id) ?? 0;
+                const due = overdue
+                  ? `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} over`
+                  : days === 0
+                    ? "Due today"
+                    : days === 1
+                      ? "Due tomorrow"
+                      : `Due in ${days} days`;
+                // Past the two-thirds mark the card would run off the right
+                // edge, so it hangs from the block's right instead.
+                const nearRightEdge = offsetPercent(days) > 62;
 
                 return (
                   <span
                     key={entry.task.id}
-                    title={`${entry.task.title} — ${
-                      overdue
-                        ? `${Math.abs(days)} days over`
-                        : days === 0
-                          ? "due today"
-                          : `due in ${days} days`
-                    }`}
+                    tabIndex={0}
                     className={
                       overdue
-                        ? "absolute top-1/2 h-6 -translate-y-1/2 rounded-sm border border-attention bg-attention/30"
-                        : "absolute top-1/2 h-6 -translate-y-1/2 rounded-sm border border-rule bg-muted"
+                        ? "group absolute top-1/2 h-6 -translate-y-1/2 rounded-sm border border-attention bg-attention/30 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                        : "group absolute top-1/2 h-6 -translate-y-1/2 rounded-sm border border-rule bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                     }
                     style={{
                       left: `${offsetPercent(days)}%`,
                       width: `${widthPercent(entry.task.estimatedDuration)}%`,
                     }}
                   >
-                    <span className="sr-only">{entry.task.title}</span>
+                    <span className="sr-only">
+                      {entry.task.title} — {due}
+                    </span>
+
+                    {/*
+                      Hover and keyboard focus both reveal it, and it is drawn
+                      by CSS alone so this stays a server component. Pointer
+                      events stay off so the card can never swallow a click
+                      meant for the block underneath.
+                    */}
+                    <span
+                      aria-hidden="true"
+                      className={
+                        "pointer-events-none invisible absolute bottom-[calc(100%+0.5rem)] z-20 w-60 rounded-md border border-border bg-popover p-3 text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100 " +
+                        (nearRightEdge ? "right-0" : "left-0")
+                      }
+                    >
+                      <span className="block text-sm font-medium text-popover-foreground">
+                        {entry.task.title}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {lane.name}
+                      </span>
+                      <span
+                        data-figures
+                        className={
+                          overdue
+                            ? "mt-2 block text-xs font-medium text-attention"
+                            : "mt-2 block text-xs text-muted-foreground"
+                        }
+                      >
+                        {due}
+                        {entry.task.estimatedDuration
+                          ? ` · ${entry.task.estimatedDuration} min`
+                          : ""}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {STATUS_WORD[entry.task.status]}
+                        {noteCount > 0 &&
+                          ` · ${noteCount} note${noteCount === 1 ? "" : "s"}`}
+                      </span>
+                    </span>
                   </span>
                 );
               })}
