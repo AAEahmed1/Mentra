@@ -75,7 +75,7 @@ export function AssistantPanel() {
       className="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-border bg-card shadow-2xl"
     >
       <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="min-w-0 border-l-2 border-primary pl-3">
+        <div className="min-w-0 border-l border-primary pl-3">
           <h2 className="text-base leading-snug font-semibold tracking-tight">
             Ask Mentra
           </h2>

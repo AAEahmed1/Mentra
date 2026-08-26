@@ -187,3 +187,27 @@ describe("rankTasks — explanation factors", () => {
     expect(entry.factors.fitsAvailableTime).toBeNull();
   });
 });
+
+describe("rankTasks — day counts are calendar days", () => {
+  const afternoon = new Date("2026-09-10T14:00:00Z");
+
+  test("something due today is not overdue, even later the same day", () => {
+    const dueToday = task({ id: "dueToday", dueDate: new Date("2026-09-10T00:00:00Z") });
+
+    const [entry] = rankTasks([dueToday], { now: afternoon });
+    expect(entry.factors.urgency).not.toBe("overdue");
+    expect(entry.factors.daysUntilDue).toBe(0);
+  });
+
+  test("counts whole calendar days, not elapsed hours", () => {
+    const inTwoDays = task({ id: "inTwoDays", dueDate: new Date("2026-09-12T00:00:00Z") });
+
+    expect(rankTasks([inTwoDays], { now: afternoon })[0].factors.daysUntilDue).toBe(2);
+  });
+
+  test("yesterday is one day over, not two", () => {
+    const yesterday = task({ id: "yesterday", dueDate: new Date("2026-09-09T00:00:00Z") });
+
+    expect(rankTasks([yesterday], { now: afternoon })[0].factors.daysUntilDue).toBe(-1);
+  });
+});

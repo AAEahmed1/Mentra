@@ -22,7 +22,7 @@ export function AppShell({
       <AppSidebar />
 
       <div className="min-w-0 flex-1">
-        <main className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-10 md:py-14">
+        <main className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-10 pb-24 md:py-14 md:pb-20">
           <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-rule pb-5">
             <div className="min-w-0">
               <h1 className="text-3xl font-semibold tracking-tight text-balance">

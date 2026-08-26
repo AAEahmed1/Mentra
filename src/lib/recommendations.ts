@@ -54,16 +54,39 @@ const PRIORITY_ORDER: Record<TaskPriority, number> = {
   low: 2,
 };
 
+/**
+ * Whole calendar days between two moments, not elapsed hours.
+ *
+ * A deadline is a day, not an instant: something due today is due today all
+ * day. Flooring the millisecond difference made a task due at midnight read as
+ * "1 day over" by lunchtime, which is both wrong and alarming.
+ */
 function daysUntil(dueDate: Date, now: Date): number {
-  return Math.floor((dueDate.getTime() - now.getTime()) / DAY_MS);
+  const due = Date.UTC(
+    dueDate.getUTCFullYear(),
+    dueDate.getUTCMonth(),
+    dueDate.getUTCDate()
+  );
+  const today = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate()
+  );
+  return Math.round((due - today) / DAY_MS);
 }
 
 function urgencyOf(task: RankableTask, now: Date): Urgency {
   if (!task.dueDate) return "someday";
-  if (getEffectiveStatus(task.status, task.dueDate, now) === "overdue") {
+
+  const days = daysUntil(task.dueDate, now);
+
+  // Overdue is measured in whole days too, so a deadline is not "missed" part
+  // way through the day it falls on.
+  if (days < 0 && getEffectiveStatus(task.status, task.dueDate, now) === "overdue") {
     return "overdue";
   }
-  return daysUntil(task.dueDate, now) <= DUE_SOON_DAYS ? "due_soon" : "upcoming";
+
+  return days <= DUE_SOON_DAYS ? "due_soon" : "upcoming";
 }
 
 function factorsFor(

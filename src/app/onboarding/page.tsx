@@ -34,7 +34,7 @@ export default async function OnboardingPage() {
           <span aria-hidden="true" className="h-px flex-1 bg-rule" />
         </div>
 
-        <div className="mt-10 border-l-2 border-primary pl-5">
+        <div className="mt-10 border-l border-primary pl-5">
           <h1 className="text-2xl leading-tight font-semibold tracking-tight text-balance">
             First, what are you studying?
           </h1>

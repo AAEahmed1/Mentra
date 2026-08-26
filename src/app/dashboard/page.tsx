@@ -9,6 +9,8 @@ import { listTasksForUser } from "@/lib/services/task";
 import { listCoursesForUser } from "@/lib/services/course";
 import { rankTasks, type RankedTask } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
+import { TermScore } from "@/components/term-score";
+import { DurationBar } from "@/components/duration-bar";
 
 export const metadata: Metadata = {
   title: "Today — Mentra",
@@ -114,6 +116,16 @@ export default async function DashboardPage() {
         </>
       }
     >
+      {struck && (
+        <TermScore
+          ranked={ranked}
+          courseNameById={
+            new Map(courses.map((course) => [course.id, course.name]))
+          }
+          now={now}
+        />
+      )}
+
       {struck ? (
         <section aria-labelledby="now-heading" className="flex flex-col gap-6">
           <div className="flex items-center gap-3">
@@ -130,25 +142,20 @@ export default async function DashboardPage() {
           </div>
 
           {/* The struck item: pulled forward off the lane it sits on. */}
-          <article className="flex flex-col gap-5 border-l-2 border-now pl-5 sm:pl-6">
+          <article className="flex flex-col gap-5 border-l border-now pl-5 sm:pl-6">
             <div className="flex items-start justify-between gap-6">
               <div className="min-w-0">
-                {struckCourse && (
-                  <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                    {struckCourse.name}
-                  </p>
-                )}
-                <h3 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight text-balance">
+                <h3 className="text-4xl leading-[1.1] font-semibold tracking-tight text-balance">
                   {struck.task.title}
                 </h3>
-                {struck.task.estimatedDuration && (
-                  <p
-                    data-figures
-                    className="mt-2 text-sm text-muted-foreground"
-                  >
-                    about {struck.task.estimatedDuration} minutes
-                  </p>
-                )}
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  {struckCourse && (
+                    <span className="text-sm text-muted-foreground">
+                      {struckCourse.name}
+                    </span>
+                  )}
+                  <DurationBar minutes={struck.task.estimatedDuration} />
+                </div>
               </div>
               <Countdown entry={struck} />
             </div>
@@ -193,25 +200,37 @@ export default async function DashboardPage() {
                   return (
                     <li
                       key={entry.task.id}
-                      className="flex items-baseline gap-4 border-b border-rule py-3.5 last:border-b-0"
+                      className="flex flex-col gap-1 border-b border-rule py-3.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-x-4"
                     >
-                      <span className="min-w-0 flex-1 truncate text-sm">
+                      {/* The title keeps the whole width on a phone rather than
+                          truncating to a fragment; the meta drops beneath it. */}
+                      <span className="text-sm sm:min-w-0 sm:flex-1 sm:truncate">
                         {entry.task.title}
                       </span>
-                      {course && (
-                        <span className="hidden shrink-0 text-xs text-muted-foreground sm:block">
-                          {course.name}
+                      <span className="flex items-center gap-x-3 text-xs text-muted-foreground">
+                        {course && (
+                          <span className="hidden shrink-0 sm:block">
+                            {course.name}
+                          </span>
+                        )}
+                        {/* Priority is what put a distant item above a nearer
+                            one; say so, or the order looks arbitrary. */}
+                        {entry.factors.priority !== "medium" && (
+                          <span className="shrink-0">
+                            {entry.factors.priority} priority
+                          </span>
+                        )}
+                        <DurationBar minutes={entry.task.estimatedDuration} />
+                        <span
+                          data-figures
+                          className={
+                            overdue
+                              ? "ml-auto shrink-0 text-sm font-medium text-attention sm:ml-0 sm:w-24 sm:text-right"
+                              : "ml-auto shrink-0 text-sm sm:ml-0 sm:w-24 sm:text-right"
+                          }
+                        >
+                          {dueLabel(entry.factors.daysUntilDue)}
                         </span>
-                      )}
-                      <span
-                        data-figures
-                        className={
-                          overdue
-                            ? "shrink-0 text-sm font-medium text-attention"
-                            : "shrink-0 text-sm text-muted-foreground"
-                        }
-                      >
-                        {dueLabel(entry.factors.daysUntilDue)}
                       </span>
                     </li>
                   );
@@ -221,7 +240,7 @@ export default async function DashboardPage() {
           )}
         </section>
       ) : (
-        <section className="flex flex-col items-start gap-4 border-l-2 border-rule pl-5">
+        <section className="flex flex-col items-start gap-4 border-l border-rule pl-5">
           <p className="max-w-[55ch] text-sm text-muted-foreground">
             Nothing open. Add your courses and what&apos;s due, and Mentra will
             work out what deserves the next hour.

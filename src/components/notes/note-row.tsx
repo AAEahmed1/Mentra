@@ -66,7 +66,7 @@ export function NoteRow({
           <div className="mt-0.5">
             <RowMeta>{metadata}</RowMeta>
           </div>
-          <p className="mt-2 text-sm whitespace-pre-wrap text-muted-foreground">
+          <p className="mt-2 max-w-[58ch] text-sm whitespace-pre-wrap text-muted-foreground">
             {note.body}
           </p>
         </div>

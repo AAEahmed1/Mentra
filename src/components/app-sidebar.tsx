@@ -13,12 +13,68 @@ import { cn } from "@/lib/utils";
  * page; collapsed, it shows abbreviations rather than disappearing.
  */
 const SECTIONS = [
-  { href: "/dashboard", label: "Today", short: "TDY" },
-  { href: "/courses", label: "Courses", short: "CRS" },
-  { href: "/tasks", label: "Work", short: "WRK" },
-  { href: "/notes", label: "Notes", short: "NTS" },
-  { href: "/privacy", label: "What Mentra knows", short: "MEM" },
+  { href: "/dashboard", label: "Today", icon: "today" },
+  { href: "/courses", label: "Courses", icon: "courses" },
+  { href: "/tasks", label: "Work", icon: "work" },
+  { href: "/notes", label: "Notes", icon: "notes" },
+  { href: "/privacy", label: "What Mentra knows", icon: "memory" },
 ] as const;
+
+/**
+ * One stroke weight, one grid, drawn rather than lettered. The collapsed rail
+ * used invented consonant-strips (TDY, CRS) which are neither words nor icons
+ * and were hidden from assistive tech besides.
+ */
+function SectionIcon({ name }: { name: (typeof SECTIONS)[number]["icon"] }) {
+  const paths: Record<typeof name, React.ReactNode> = {
+    today: (
+      <>
+        <rect x="2.5" y="3.5" width="13" height="12" rx="1.5" />
+        <line x1="2.5" y1="7" x2="15.5" y2="7" />
+        <line x1="9" y1="10.5" x2="9" y2="15.5" />
+      </>
+    ),
+    courses: (
+      <>
+        <path d="M3 4.5h5a2 2 0 0 1 2 2v8a1.5 1.5 0 0 0-1.5-1.5H3z" />
+        <path d="M15 4.5h-5a2 2 0 0 0-2 2v8a1.5 1.5 0 0 1 1.5-1.5H15z" />
+      </>
+    ),
+    work: (
+      <>
+        <rect x="2.5" y="5.5" width="13" height="9" rx="1.5" />
+        <path d="M6.5 5.5V4a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5" />
+      </>
+    ),
+    notes: (
+      <>
+        <path d="M4 2.5h6.5L14 6v9.5H4z" />
+        <path d="M10.5 2.5V6H14" />
+      </>
+    ),
+    memory: (
+      <>
+        <circle cx="9" cy="9" r="6" />
+        <path d="M9 5.5v3.5l2.5 1.5" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-[18px] shrink-0"
+      aria-hidden="true"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
 
 const STORAGE_KEY = "mentra:margin-collapsed";
 
@@ -179,17 +235,9 @@ export function AppSidebar() {
                       active ? "bg-sidebar-primary" : "bg-transparent"
                     )}
                   />
-                  <span className={cn(collapsed && "md:hidden")}>
+                  <SectionIcon name={section.icon} />
+                  <span className={cn("ml-2.5", collapsed && "md:hidden")}>
                     {section.label}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "hidden text-xs font-medium tracking-widest",
-                      collapsed && "md:block"
-                    )}
-                  >
-                    {section.short}
                   </span>
                 </Link>
               </li>
@@ -204,9 +252,7 @@ export function AppSidebar() {
           )}
         >
           <ThemeToggle />
-          <span className={cn(collapsed && "md:hidden")}>
-            <SignOutButton />
-          </span>
+          <SignOutButton collapsed={collapsed} />
         </div>
       </nav>
     </>
