@@ -7,6 +7,7 @@ import {
   createCourse,
   deleteCourse,
   listCoursesForSemester,
+  listCoursesForUser,
   updateCourse,
 } from "@/lib/services/course";
 
@@ -95,6 +96,45 @@ describe("listCoursesForSemester", () => {
 
     expect(courses).toHaveLength(1);
     expect(courses[0].name).toBe("Network Security");
+  });
+});
+
+describe("listCoursesForUser", () => {
+  test("returns only courses owned by the given user, across all their semesters", async () => {
+    await createCourse(userId, semesterId, {
+      name: "Network Security",
+      code: undefined,
+      professor: undefined,
+      credits: undefined,
+    });
+
+    const otherUser = await prisma.user.create({
+      data: {
+        name: "Other Student",
+        email: `test-course-other-${randomUUID()}@example.com`,
+        emailVerified: true,
+      },
+    });
+    const otherSemester = await createSemester(otherUser.id, {
+      name: "Spring 2027",
+      startDate: new Date("2027-01-15"),
+      endDate: new Date("2027-05-01"),
+    });
+    await createCourse(otherUser.id, otherSemester.id, {
+      name: "Other's Course",
+      code: undefined,
+      professor: undefined,
+      credits: undefined,
+    });
+
+    const courses = await listCoursesForUser(userId);
+
+    expect(courses).toHaveLength(1);
+    expect(courses[0].name).toBe("Network Security");
+
+    await prisma.course.deleteMany({ where: { semesterId: otherSemester.id } });
+    await prisma.semester.delete({ where: { id: otherSemester.id } });
+    await prisma.user.delete({ where: { id: otherUser.id } });
   });
 });
 

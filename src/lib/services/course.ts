@@ -36,6 +36,13 @@ export function listCoursesForSemester(
   });
 }
 
+export function listCoursesForUser(userId: string): Promise<Course[]> {
+  return prisma.course.findMany({
+    where: { semester: { userId } },
+    orderBy: { name: "asc" },
+  });
+}
+
 export type UpdateCourseResult =
   | { success: true; data: Course }
   | { success: false; error: "not_found" };

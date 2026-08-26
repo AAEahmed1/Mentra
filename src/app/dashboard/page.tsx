@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { requireUserId } from "@/lib/session";
+import { AppHeader } from "@/components/app-header";
 import { prisma } from "@/lib/prisma";
 import { greetingForHour } from "@/lib/greeting";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Dashboard — Mentra",
@@ -28,21 +26,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-svh bg-background">
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
-        <span className="font-serif text-base font-semibold tracking-tight text-primary">
-          Mentra
-        </span>
-        <div className="flex items-center gap-1">
-          <Link
-            href="/courses"
-            className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            Courses
-          </Link>
-          <ThemeToggle />
-          <SignOutButton />
-        </div>
-      </header>
+      <AppHeader current="/dashboard" />
 
       <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-12">
         <div>

@@ -25,9 +25,96 @@ model User {
   sessions      Session[]
   accounts      Account[]
   semesters     Semester[]
+  tasks         Task[]
+  notes         Note[]
+  memories      Memory[]
 
   @@unique([email])
   @@map("user")
+}
+
+enum MemoryType {
+  profile
+  commitment
+  learning_state
+  behavioral
+}
+
+enum MemorySource {
+  explicit
+  inferred
+}
+
+model Memory {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  type      MemoryType
+  source    MemorySource
+  createdAt DateTime     @default(now())
+
+  @@index([userId])
+  @@map("memory")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String?
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("note")
+}
+
+enum TaskStatus {
+  not_started
+  in_progress
+  paused
+  completed
+  cancelled
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum TaskType {
+  task
+  assignment
+  exam
+}
+
+model Task {
+  id                String       @id @default(cuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId          String?
+  course            Course?      @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  title             String
+  description       String?
+  dueDate           DateTime?
+  priority          TaskPriority @default(medium)
+  estimatedDuration Int?
+  actualDuration    Int?
+  status            TaskStatus   @default(not_started)
+  type              TaskType     @default(task)
+  topicsToReview    String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("task")
 }
 
 model Semester {
@@ -56,6 +143,9 @@ model Course {
   credits    Int?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  tasks Task[]
+  notes Note[]
 
   @@index([semesterId])
   @@map("course")

@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { requireUserId } from "@/lib/session";
+import { AppHeader } from "@/components/app-header";
 import { listSemestersForUser } from "@/lib/services/semester";
 import { listCoursesForSemester } from "@/lib/services/course";
 import { CreateSemesterForm } from "@/components/courses/create-semester-form";
 import { CreateCourseForm } from "@/components/courses/create-course-form";
 import { DeleteSemesterButton } from "@/components/courses/delete-semester-button";
 import { CourseRow } from "@/components/courses/course-row";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Card,
   CardAction,
@@ -42,18 +40,7 @@ export default async function CoursesPage() {
 
   return (
     <div className="min-h-svh bg-background">
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
-        <Link
-          href="/dashboard"
-          className="font-serif text-base font-semibold tracking-tight text-primary"
-        >
-          Mentra
-        </Link>
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <SignOutButton />
-        </div>
-      </header>
+      <AppHeader current="/courses" />
 
       <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-12">
         <div>
