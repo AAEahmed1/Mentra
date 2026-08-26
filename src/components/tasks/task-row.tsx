@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
-
 import { updateTaskAction, completeTaskAction, deleteTaskAction } from "@/lib/actions/task";
+import { useInlineEdit, useRowAction } from "@/lib/use-row-actions";
 import { getEffectiveStatus } from "@/lib/task-status";
 import type { Task } from "@/generated/prisma/client";
+import {
+  EditActions,
+  FiledRow,
+  FiledRowEditing,
+  FormErrors,
+  RowMeta,
+} from "@/components/filed-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,33 +41,9 @@ export function TaskRow({
   courseName: string | null;
   courses: CourseOption[];
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [isPending, startTransition] = useTransition();
-
-  function handleUpdate(formData: FormData) {
-    startTransition(async () => {
-      const result = await updateTaskAction({ errors: [] }, formData);
-      if (result.errors.length > 0) {
-        setErrors(result.errors);
-        return;
-      }
-      setErrors([]);
-      setIsEditing(false);
-    });
-  }
-
-  function handleComplete() {
-    const formData = new FormData();
-    formData.set("taskId", task.id);
-    startTransition(() => completeTaskAction(formData));
-  }
-
-  function handleDelete() {
-    const formData = new FormData();
-    formData.set("taskId", task.id);
-    startTransition(() => deleteTaskAction(formData));
-  }
+  const edit = useInlineEdit(updateTaskAction);
+  const complete = useRowAction(completeTaskAction);
+  const remove = useRowAction(deleteTaskAction);
 
   const effectiveStatus = getEffectiveStatus(
     task.status,
@@ -70,7 +52,7 @@ export function TaskRow({
   );
   const isResolved = task.status === "completed" || task.status === "cancelled";
 
-  if (!isEditing) {
+  if (!edit.isEditing) {
     const metadata = [
       courseName,
       task.dueDate ? `Due ${dateFormatter.format(task.dueDate)}` : null,
@@ -85,7 +67,35 @@ export function TaskRow({
       .join(" · ");
 
     return (
-      <li className="flex flex-wrap items-center justify-between gap-2 bg-card px-4 py-3">
+      <FiledRow
+        actions={
+          <>
+            {!isResolved && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => complete.run("taskId", task.id)}
+                disabled={complete.isPending}
+              >
+                Complete
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="sm" onClick={edit.open}>
+              Edit
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => remove.run("taskId", task.id)}
+              disabled={remove.isPending}
+            >
+              Remove
+            </Button>
+          </>
+        }
+      >
         <div>
           <p
             className={
@@ -97,11 +107,7 @@ export function TaskRow({
             {task.title}
           </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
-            {metadata && (
-              <p className="font-mono text-xs tabular-nums-mono text-muted-foreground">
-                {metadata}
-              </p>
-            )}
+            {metadata && <RowMeta>{metadata}</RowMeta>}
             {effectiveStatus === "overdue" ? (
               <span className="whitespace-nowrap rounded-full bg-tab-due px-2 py-0.5 text-xs font-medium text-tab-due-foreground">
                 Overdue
@@ -113,43 +119,13 @@ export function TaskRow({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          {!isResolved && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleComplete}
-              disabled={isPending}
-            >
-              Complete
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            Edit
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isPending}
-          >
-            Remove
-          </Button>
-        </div>
-      </li>
+      </FiledRow>
     );
   }
 
   return (
-    <li className="bg-card px-4 py-3">
-      <form action={handleUpdate} className="flex flex-col gap-3">
+    <FiledRowEditing>
+      <form action={edit.submit} className="flex flex-col gap-3">
         <input type="hidden" name="taskId" value={task.id} />
 
         <div className="flex flex-col gap-2">
@@ -272,31 +248,9 @@ export function TaskRow({
           />
         </div>
 
-        {errors.length > 0 && (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {errors.map((error) => (
-              <p key={error}>{error}</p>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center gap-1">
-          <Button type="submit" size="sm" disabled={isPending}>
-            {isPending ? "Saving…" : "Save"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(false)}
-          >
-            Cancel
-          </Button>
-        </div>
+        <FormErrors errors={edit.errors} />
+        <EditActions isPending={edit.isPending} onCancel={edit.cancel} />
       </form>
-    </li>
+    </FiledRowEditing>
   );
 }

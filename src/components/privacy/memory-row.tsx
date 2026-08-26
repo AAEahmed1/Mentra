@@ -1,9 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
-
 import { deleteMemoryAction } from "@/lib/actions/memory";
+import { useRowAction } from "@/lib/use-row-actions";
 import type { Memory } from "@/generated/prisma/client";
+import { FiledRow, RowMeta } from "@/components/filed-row";
 import { Button } from "@/components/ui/button";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -20,33 +20,33 @@ const TYPE_LABEL: Record<Memory["type"], string> = {
 };
 
 export function MemoryRow({ memory }: { memory: Memory }) {
-  const [isPending, startTransition] = useTransition();
-
-  function handleDelete() {
-    const formData = new FormData();
-    formData.set("memoryId", memory.id);
-    startTransition(() => deleteMemoryAction(formData));
-  }
+  const forget = useRowAction(deleteMemoryAction);
 
   return (
-    <li className="flex flex-wrap items-start justify-between gap-2 bg-card px-4 py-3">
+    <FiledRow
+      align="start"
+      actions={
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => forget.run("memoryId", memory.id)}
+          disabled={forget.isPending}
+        >
+          Forget
+        </Button>
+      }
+    >
       <div className="min-w-0 flex-1">
         <p className="text-sm">{memory.content}</p>
-        <p className="mt-0.5 font-mono text-xs tabular-nums-mono text-muted-foreground">
-          {TYPE_LABEL[memory.type]} ·{" "}
-          {memory.source === "explicit" ? "You told me" : "I inferred"} ·{" "}
-          {dateFormatter.format(memory.createdAt)}
-        </p>
+        <div className="mt-0.5">
+          <RowMeta>
+            {TYPE_LABEL[memory.type]} ·{" "}
+            {memory.source === "explicit" ? "You told me" : "I inferred"} ·{" "}
+            {dateFormatter.format(memory.createdAt)}
+          </RowMeta>
+        </div>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={handleDelete}
-        disabled={isPending}
-      >
-        Forget
-      </Button>
-    </li>
+    </FiledRow>
   );
 }

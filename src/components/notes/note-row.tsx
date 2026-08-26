@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
-
 import { updateNoteAction, deleteNoteAction } from "@/lib/actions/note";
+import { useInlineEdit, useRowAction } from "@/lib/use-row-actions";
 import type { Note } from "@/generated/prisma/client";
+import {
+  EditActions,
+  FiledRow,
+  FiledRowEditing,
+  FormErrors,
+  RowMeta,
+} from "@/components/filed-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,70 +33,50 @@ export function NoteRow({
   courseName: string | null;
   courses: CourseOption[];
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [isPending, startTransition] = useTransition();
+  const edit = useInlineEdit(updateNoteAction);
+  const remove = useRowAction(deleteNoteAction);
 
-  function handleUpdate(formData: FormData) {
-    startTransition(async () => {
-      const result = await updateNoteAction({ errors: [] }, formData);
-      if (result.errors.length > 0) {
-        setErrors(result.errors);
-        return;
-      }
-      setErrors([]);
-      setIsEditing(false);
-    });
-  }
-
-  function handleDelete() {
-    const formData = new FormData();
-    formData.set("noteId", note.id);
-    startTransition(() => deleteNoteAction(formData));
-  }
-
-  if (!isEditing) {
+  if (!edit.isEditing) {
     const metadata = [courseName, dateFormatter.format(note.createdAt)]
       .filter(Boolean)
       .join(" · ");
 
     return (
-      <li className="flex flex-wrap items-start justify-between gap-2 bg-card px-4 py-3">
+      <FiledRow
+        align="start"
+        actions={
+          <>
+            <Button type="button" variant="ghost" size="sm" onClick={edit.open}>
+              Edit
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => remove.run("noteId", note.id)}
+              disabled={remove.isPending}
+            >
+              Remove
+            </Button>
+          </>
+        }
+      >
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{note.title}</p>
-          <p className="mt-0.5 font-mono text-xs tabular-nums-mono text-muted-foreground">
-            {metadata}
-          </p>
+          <div className="mt-0.5">
+            <RowMeta>{metadata}</RowMeta>
+          </div>
           <p className="mt-2 text-sm whitespace-pre-wrap text-muted-foreground">
             {note.body}
           </p>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            Edit
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isPending}
-          >
-            Remove
-          </Button>
-        </div>
-      </li>
+      </FiledRow>
     );
   }
 
   return (
-    <li className="bg-card px-4 py-3">
-      <form action={handleUpdate} className="flex flex-col gap-3">
+    <FiledRowEditing>
+      <form action={edit.submit} className="flex flex-col gap-3">
         <input type="hidden" name="noteId" value={note.id} />
 
         <div className="flex flex-col gap-2">
@@ -132,31 +118,9 @@ export function NoteRow({
           </Select>
         </div>
 
-        {errors.length > 0 && (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {errors.map((error) => (
-              <p key={error}>{error}</p>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center gap-1">
-          <Button type="submit" size="sm" disabled={isPending}>
-            {isPending ? "Saving…" : "Save"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(false)}
-          >
-            Cancel
-          </Button>
-        </div>
+        <FormErrors errors={edit.errors} />
+        <EditActions isPending={edit.isPending} onCancel={edit.cancel} />
       </form>
-    </li>
+    </FiledRowEditing>
   );
 }

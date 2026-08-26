@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
+import { auth, hasGoogleAuth } from "@/lib/auth";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
@@ -21,13 +21,17 @@ export default async function SignInPage() {
   return (
     <AuthShell title="Welcome back" description="Sign in to Mentra.">
       <div className="flex flex-col gap-5">
-        <GoogleSignInButton label="Sign in with Google" />
+        {hasGoogleAuth && (
+          <>
+            <GoogleSignInButton label="Sign in with Google" />
 
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">or</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </>
+        )}
 
         <SignInForm />
       </div>
