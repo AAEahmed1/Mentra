@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 
 import { requireUserId } from "@/lib/session";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { listTasksForUser } from "@/lib/services/task";
 import { listCoursesForUser } from "@/lib/services/course";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { TaskRow } from "@/components/tasks/task-row";
-import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Tasks — Mentra",
+  title: "Work — Mentra",
 };
 
 export default async function TasksPage() {
@@ -26,47 +25,33 @@ export default async function TasksPage() {
   }));
 
   return (
-    <div className="min-h-svh bg-background">
-      <AppHeader current="/tasks" />
+    <AppShell
+      title="Work"
+      lede="Everything due — tasks, assignments and exams, on a course line or on their own."
+    >
+      {tasks.length > 0 && (
+        <ul className="flex flex-col">
+          {tasks.map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              courseName={
+                task.courseId
+                  ? (courseNameById.get(task.courseId) ?? null)
+                  : null
+              }
+              courses={courseOptions}
+            />
+          ))}
+        </ul>
+      )}
 
-      <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-12">
-        <div>
-          <h1 className="font-serif text-2xl font-semibold text-balance">
-            Tasks
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tasks, assignments, and exams — linked to a course or on their own.
-          </p>
-        </div>
-
-        {tasks.length > 0 && (
-          <Card>
-            <CardContent>
-              <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
-                {tasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    courseName={
-                      task.courseId
-                        ? (courseNameById.get(task.courseId) ?? null)
-                        : null
-                    }
-                    courses={courseOptions}
-                  />
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="rounded-lg border border-dashed border-border p-5">
-          <h2 className="mb-4 text-sm font-medium text-muted-foreground">
-            Add a task
-          </h2>
-          <CreateTaskForm courses={courseOptions} />
-        </div>
-      </main>
-    </div>
+      <section className="flex flex-col gap-4 border-t border-rule pt-6">
+        <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+          Add work
+        </h2>
+        <CreateTaskForm courses={courseOptions} />
+      </section>
+    </AppShell>
   );
 }

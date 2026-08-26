@@ -61,7 +61,7 @@ export function CreateCourseForm({ semesterId }: { semesterId: string }) {
       {state.errors.length > 0 && (
         <div
           role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {state.errors.map((error) => (
             <p key={error}>{error}</p>

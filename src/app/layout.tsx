@@ -1,27 +1,14 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from "next/font/google";
+import { Archivo } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { auth } from "@/lib/auth";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
 
-const plexSans = IBM_Plex_Sans({
+const archivo = Archivo({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-const plexSerif = IBM_Plex_Serif({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  weight: ["500", "600"],
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -38,9 +25,24 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${archivo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/*
+          DIRECTION CONTRACT
+          THESIS: your term is a score — every course a line, all read against one
+          timeline — refusing the dashboard-of-cards that treats work as unordered tiles.
+          OWN-WORLD: paper-and-ink neutrals (warm off-white by day, deep slate by night),
+          one grotesque at many weights, hairline lane rules; indigo marks now and next,
+          amber marks what has slipped, everything on track carries no colour at all.
+          STORY: the student opens the term, sees where the cursor sits today, reads the
+          one thing under it and why, and works.
+          FIRST VIEWPORT: a collapsible margin naming each course line, a time ruler, work
+          on lanes with the NOW rule crossing them, tonight's item full size beneath.
+          FORM: The Score — direction 7 of 7 on the ranked list, seed key 6bf7da0b.
+          FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+          review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+        */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           {session?.user && <AssistantPanel />}

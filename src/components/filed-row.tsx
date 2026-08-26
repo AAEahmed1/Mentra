@@ -22,25 +22,28 @@ export function FiledRow({
   return (
     <li
       className={cn(
-        "flex flex-wrap justify-between gap-2 bg-card px-4 py-3",
+        "group flex flex-wrap justify-between gap-x-4 gap-y-2 border-b border-rule py-3.5 last:border-b-0",
         align === "start" ? "items-start" : "items-center"
       )}
     >
       {children}
-      <div className="flex items-center gap-1">{actions}</div>
+      {/* Actions stay out of the way until the row is under the pointer. */}
+      <div className="flex items-center gap-1 opacity-100 transition-opacity focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100">
+        {actions}
+      </div>
     </li>
   );
 }
 
 /** The same row, opened for editing — the form supplies its own layout. */
 export function FiledRowEditing({ children }: { children: ReactNode }) {
-  return <li className="bg-card px-4 py-3">{children}</li>;
+  return <li className="border-b border-rule py-4 last:border-b-0">{children}</li>;
 }
 
-/** The stamped metadata line under a row's title. */
+/** The metadata line under a row's title. */
 export function RowMeta({ children }: { children: ReactNode }) {
   return (
-    <p className="font-mono text-xs tabular-nums-mono text-muted-foreground">
+    <p data-figures className="text-xs text-muted-foreground">
       {children}
     </p>
   );
@@ -53,7 +56,7 @@ export function FormErrors({ errors }: { errors: string[] }) {
   return (
     <div
       role="alert"
-      className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+      className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {errors.map((error) => (
         <p key={error}>{error}</p>
