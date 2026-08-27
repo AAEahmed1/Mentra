@@ -243,3 +243,19 @@ describe("validateToolCall — writing to every surface, not only tasks", () => 
     expect(result).toEqual({ ok: true, name: "list_semesters", args: {} });
   });
 });
+
+describe("validateToolCall — finding notes attached to a piece of work", () => {
+  test("accepts search_notes filtered to one task", () => {
+    const result = validateToolCall("search_notes", { taskId: "task_123" });
+
+    expect(
+      result.ok && result.name === "search_notes" && result.args.taskId
+    ).toBe("task_123");
+  });
+
+  test("still accepts search_notes with only a query", () => {
+    const result = validateToolCall("search_notes", { query: "insulin" });
+
+    expect(result.ok).toBe(true);
+  });
+});

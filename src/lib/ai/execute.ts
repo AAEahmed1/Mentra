@@ -24,6 +24,19 @@ export async function executeToolCall(
   call: ValidatedToolCall,
   now: Date = new Date()
 ): Promise<unknown> {
+  /**
+   * Course names, keyed by id. Tool results carry the name as well as the id:
+   * handing the model a bare foreign key makes it either join the tables in
+   * its head or admit it cannot name the course.
+   */
+  const courseNames = async () =>
+    new Map(
+      (await listCoursesForUser(userId)).map((course) => [
+        course.id,
+        course.name,
+      ])
+    );
+
   switch (call.name) {
     case "get_courses": {
       const courses = await listCoursesForUser(userId);
@@ -37,7 +50,10 @@ export async function executeToolCall(
     }
 
     case "get_tasks": {
-      const tasks = await listTasksForUser(userId);
+      const [tasks, names] = await Promise.all([
+        listTasksForUser(userId),
+        courseNames(),
+      ]);
       return tasks
         .filter((task) =>
           call.args.status ? task.status === call.args.status : true
@@ -49,6 +65,9 @@ export async function executeToolCall(
           id: task.id,
           title: task.title,
           courseId: task.courseId,
+          courseName: task.courseId
+            ? (names.get(task.courseId) ?? null)
+            : null,
           dueDate: task.dueDate?.toISOString().slice(0, 10) ?? null,
           priority: task.priority,
           status: task.status,
@@ -58,7 +77,10 @@ export async function executeToolCall(
     }
 
     case "get_deadlines": {
-      const tasks = await listTasksForUser(userId);
+      const [tasks, names] = await Promise.all([
+        listTasksForUser(userId),
+        courseNames(),
+      ]);
       const ranked = rankTasks(tasks, {
         now,
         availableMinutes: call.args.availableMinutes,
@@ -71,6 +93,9 @@ export async function executeToolCall(
         rank: index + 1,
         id: entry.task.id,
         title: entry.task.title,
+        courseName: entry.task.courseId
+          ? (names.get(entry.task.courseId) ?? null)
+          : null,
         dueDate: entry.task.dueDate?.toISOString().slice(0, 10) ?? null,
         estimatedDuration: entry.task.estimatedDuration,
         factors: entry.factors,
@@ -120,12 +145,26 @@ export async function executeToolCall(
     }
 
     case "search_notes": {
-      const notes = await searchNotesForUser(userId, call.args.query);
+      const [found, names] = await Promise.all([
+        searchNotesForUser(userId, call.args.query),
+        courseNames(),
+      ]);
+
+      // Filtering here rather than in the query keeps keyword search and
+      // "notes on this work" as one tool the model cannot pick wrongly.
+      const notes = call.args.taskId
+        ? found.filter((note) => note.taskId === call.args.taskId)
+        : found;
+
       return notes.map((note) => ({
         id: note.id,
         title: note.title,
         body: note.body,
         courseId: note.courseId,
+        courseName: note.courseId ? (names.get(note.courseId) ?? null) : null,
+        // Without this the assistant can see notes but never what they hang
+        // off, so it answers "no notes" to work that plainly has some.
+        taskId: note.taskId,
       }));
     }
 

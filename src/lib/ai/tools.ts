@@ -63,6 +63,7 @@ const toolSchemas = {
   }),
   search_notes: z.object({
     query: z.string().default(""),
+    taskId: z.string().optional(),
   }),
   search_memory: empty,
   save_memory: z.object({
@@ -206,10 +207,13 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "search_notes",
     description:
-      "Search the student's own notes by keyword across title and body. An empty query returns all of them.",
+      "Read the student's notes. Pass taskId to get exactly the notes attached to one piece of work — use this to answer whether something has notes. Pass a query to search title and body by keyword. With neither, returns all of them.",
     parameters: {
       type: "object",
-      properties: { query: str("Keyword to search for.") },
+      properties: {
+        query: str("Keyword to search for."),
+        taskId: str("Only notes attached to this piece of work."),
+      },
       additionalProperties: false,
     },
   },
