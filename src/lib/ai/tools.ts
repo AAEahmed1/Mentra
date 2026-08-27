@@ -71,6 +71,19 @@ const toolSchemas = {
     type: memoryType,
     source: memorySource.default("inferred"),
   }),
+  update_note: z.object({
+    noteId: z.string().min(1),
+    title: z.string().min(1).optional(),
+    body: z.string().min(1).optional(),
+    courseId: z.string().optional(),
+    taskId: z.string().optional(),
+  }),
+  delete_note: z.object({
+    noteId: z.string().min(1),
+  }),
+  delete_task: z.object({
+    taskId: z.string().min(1),
+  }),
   create_note: z.object({
     title: z.string().min(1),
     body: z.string().min(1),
@@ -254,6 +267,45 @@ export const toolDefinitions: ToolDefinition[] = [
         taskId: str("Task id this note is about, if it is about one."),
       },
       required: ["title", "body"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "update_note",
+    description:
+      "Correct a note that is already written: its title, its body, or the course and piece of work it is filed under. Only what you name changes. Get the id from search_notes first.",
+    parameters: {
+      type: "object",
+      properties: {
+        noteId: str("The id of the note to correct."),
+        title: str("New title."),
+        body: str("New body, replacing what is there."),
+        courseId: str("Course id to re-file it under."),
+        taskId: str("Task id to attach it to instead."),
+      },
+      required: ["noteId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "delete_note",
+    description:
+      "Delete a note for good. Use this to undo a note that should not have been written. Ask the student first unless they told you to remove it.",
+    parameters: {
+      type: "object",
+      properties: { noteId: str("The id of the note to delete.") },
+      required: ["noteId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "delete_task",
+    description:
+      "Delete a piece of work for good, along with nothing else — notes written against it survive. Use this to undo work that should not have been created; to record work as finished use complete_task instead. Ask the student first unless they told you to remove it.",
+    parameters: {
+      type: "object",
+      properties: { taskId: str("The id of the work to delete.") },
+      required: ["taskId"],
       additionalProperties: false,
     },
   },

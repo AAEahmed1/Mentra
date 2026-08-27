@@ -16,11 +16,13 @@ What "Ask Mentra" can and cannot do, and the limits it runs under.
 | System prompt, rebuilt each turn | `src/lib/ai/system-prompt.ts` |
 | The OpenAI client | `src/lib/ai/openai.ts` |
 | The turn loop (tool rounds, recovery) | `src/lib/ai/chat.ts` |
-| Stored conversation | `src/lib/services/message.ts` |
+| Stored conversations | `src/lib/services/conversation.ts` |
+| Lines within a conversation | `src/lib/services/message.ts` |
+| The chats pages | `src/app/chats/` |
 | HTTP entry point and session binding | `src/app/api/assistant/route.ts` |
 | The panel itself | `src/components/assistant/assistant-panel.tsx` |
 
-Thirteen tools, six read and seven write.
+Sixteen tools, six read and ten write.
 
 ## What it can read
 
@@ -51,25 +53,30 @@ Thirteen tools, six read and seven write.
 - **`create_course`** — into an existing term, so `list_semesters` has to come
   first.
 - **`create_semester`**.
+- **`update_note`** — title, body, and the course or piece of work it is filed
+  under. Only the fields named are changed.
+- **`delete_note`** and **`delete_task`** — permanent. Notes written against a
+  deleted piece of work survive it (`Note.taskId` is `onDelete: SetNull`).
 - **`save_memory`** — content, type (profile, commitment, learning_state or
   behavioral) and source (explicit when the student said it, inferred
   otherwise).
 
 The system prompt tells it to file things it hears in passing rather than
 waiting to be commanded, and to say what it recorded. It asks first before
-changing or removing anything that already exists.
+changing or removing anything that already exists, and is told that finishing
+work is `complete_task`, not `delete_task`.
 
 ## What it cannot do
 
-- **Delete anything.** No delete tool exists for tasks, notes, courses, terms or
-  memories. The services do (`deleteTask`, `deleteNote`, `deleteCourse`,
-  `deleteSemester`, `deleteMemory`) — they are deliberately not exposed, so
-  destructive actions stay in the UI where the student clicks them.
-- **Edit a note, a course or a term.** `updateNote`, `updateCourse` and
-  `updateSemester` exist but have no tools. Tasks are the only thing the
-  assistant can change after the fact.
-- **Detach or re-file a note.** A note's course and task are set when it is
-  created and cannot be changed by chat.
+- **Delete a course, a term or a memory.** `deleteCourse`, `deleteSemester` and
+  `deleteMemory` exist as services but have no tools: a course or a term takes
+  real work with it, and forgetting is the student's call, so those stay in the
+  UI where they click them. Tasks and notes it can delete, because it can also
+  create them and needs to be able to undo itself.
+- **Edit a course or a term.** `updateCourse` and `updateSemester` exist but
+  have no tools.
+- **Unfile a note.** `update_note` can move a note to a different course or
+  piece of work, but not clear the link back to nothing.
 - **Touch grades.** There is no grade field in the schema.
 - **See anything outside those thirteen tools.** It cannot read the page the
   student is looking at, browse the web, or open files.
@@ -86,15 +93,28 @@ changing or removing anything that already exists.
   rather than sent by the browser. A single message is capped at 4000
   characters. Older lines stay in the table; this is the window the assistant is
   given, not a retention policy.
-- **The conversation is stored per student**, so it survives a reload and
-  follows them between devices. One running thread, not separate conversations —
-  there is no way to start a fresh one or clear it from the UI yet.
+- **Conversations are separate threads**, stored per student, so they survive a
+  reload and follow them between devices. The Chats page lists them newest
+  first, titled from their opening question; the floating panel carries on the
+  most recent one. Starting a new chat is how you escape a thread that has gone
+  wrong, and deleting one is permanent.
+- **Only the current thread is given to the model.** It cannot read the
+  student's other conversations, and nothing carries across them except memory.
 - **Forty memories are injected per turn** (`MAX_INJECTED_MEMORIES`), newest
   first. Past that the prompt says how many were left out and points the model at
   `search_memory`, which still returns everything unfiltered.
-- **`reasoning_effort: "none"`.** Ranking is decided by `rankTasks`, so the model
-  routes and phrases rather than deduces. Revisit this before reaching for a
-  larger model if multi-step requests start failing.
+- **`reasoning_effort` must stay `"none"`.** Not a tuning choice: the chat
+  completions endpoint rejects any other value when function tools are attached
+  ("Function tools with reasoning_effort are not supported for gpt-5.6-terra in
+  /v1/chat/completions"). Reasoning together with tools would mean moving to
+  /v1/responses, a different request and response shape. Ranking is decided by
+  `rankTasks` anyway, so the model routes and phrases rather than deduces.
+- **A poisoned transcript defeats the tools.** If the assistant ever claims an
+  action it did not perform, that claim is stored like any other line, and later
+  turns answer from it instead of calling tools — measured as zero tool calls on
+  three consecutive turns. The same request on a clean thread calls
+  `search_notes` then `delete_note` correctly. The cure is to start a new chat
+  from the Chats page, which is why that exists.
 - **Model is `gpt-5.6-terra`** by default, overridable with `OPENAI_MODEL`. The
   cheaper `gpt-5.6-luna` could not chain tool calls: asked to attach a note to a
   piece of work it skipped the id lookup, wrote the context into the note body,

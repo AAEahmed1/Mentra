@@ -65,10 +65,12 @@ export function createOpenAiCompleter(): ChatCompleter {
       model,
       messages: toOpenAiMessages(messages),
       tools,
-      // Ranking is already decided by rankTasks, so the model is routing and
-      // phrasing rather than deducing, and it chains tool calls correctly
-      // without reasoning on the current model. Revisit this before reaching
-      // for a larger model if multi-step requests start failing again.
+      // Must stay "none": this endpoint rejects any other value when function
+      // tools are attached ("Function tools with reasoning_effort are not
+      // supported for gpt-5.6-terra in /v1/chat/completions"). Reasoning plus
+      // tools needs /v1/responses, which is a different request and response
+      // shape. Ranking is decided by rankTasks anyway, so the model routes and
+      // phrases rather than deduces.
       reasoning_effort: "none",
     });
 

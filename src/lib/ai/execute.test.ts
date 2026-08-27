@@ -140,3 +140,83 @@ describe("get_deadlines — naming the course too", () => {
     expect(entry.courseName).toBe("Network Defence");
   });
 });
+
+describe("correcting what the assistant already filed", () => {
+  test("update_note rewrites a note it got wrong", async () => {
+    const note = await createNote(userId, {
+      title: "Lab requirements",
+      body: "Wrong text.",
+      courseId: undefined,
+      taskId,
+    });
+    if (!note.success) throw new Error("fixture failed");
+
+    await run(userId, "update_note", {
+      noteId: note.data.id,
+      body: "The right text.",
+    });
+
+    const stored = await prisma.note.findUniqueOrThrow({
+      where: { id: note.data.id },
+    });
+    expect(stored.body).toBe("The right text.");
+    // Only what was named changes; the rest of the note is left alone.
+    expect(stored.title).toBe("Lab requirements");
+  });
+
+  test("update_note moves a note onto the work it was actually about", async () => {
+    const note = await createNote(userId, {
+      title: "Loose thought",
+      body: "Filed against nothing.",
+      courseId: undefined,
+      taskId: undefined,
+    });
+    if (!note.success) throw new Error("fixture failed");
+
+    await run(userId, "update_note", { noteId: note.data.id, taskId });
+
+    const stored = await prisma.note.findUniqueOrThrow({
+      where: { id: note.data.id },
+    });
+    expect(stored.taskId).toBe(taskId);
+  });
+
+  test("delete_note removes it, so a wrong note doesn't linger", async () => {
+    const note = await createNote(userId, {
+      title: "Filed by mistake",
+      body: "Should never have been written.",
+      courseId: undefined,
+      taskId: undefined,
+    });
+    if (!note.success) throw new Error("fixture failed");
+
+    const result = await run(userId, "delete_note", { noteId: note.data.id });
+
+    expect(result).toEqual({ deleted: true });
+    expect(
+      await prisma.note.findUnique({ where: { id: note.data.id } })
+    ).toBeNull();
+  });
+
+  test("delete_task removes work that should not have been created", async () => {
+    const result = await run(userId, "delete_task", { taskId });
+
+    expect(result).toEqual({ deleted: true });
+    expect(await prisma.task.findUnique({ where: { id: taskId } })).toBeNull();
+  });
+
+  test("reports failure rather than pretending, when the note is not theirs", async () => {
+    const result = await run(userId, "delete_note", { noteId: "note_nobody" });
+
+    expect(result).toMatchObject({ deleted: false });
+  });
+
+  test("reports failure rather than pretending, when the work is not theirs", async () => {
+    const result = await run(userId, "update_note", {
+      noteId: "note_nobody",
+      body: "Nothing to change.",
+    });
+
+    expect(result).toMatchObject({ updated: false });
+  });
+});

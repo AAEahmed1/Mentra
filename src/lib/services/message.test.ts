@@ -2,51 +2,40 @@ import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { prisma } from "@/lib/prisma";
+import { createConversation } from "@/lib/services/conversation";
 import {
   appendMessages,
-  listMessagesForUser,
+  listMessagesForConversation,
   MAX_STORED_HISTORY,
 } from "@/lib/services/message";
 
 let userId: string;
-let otherUserId: string;
+let conversationId: string;
 
 beforeEach(async () => {
-  const [user, other] = await Promise.all([
-    prisma.user.create({
-      data: {
-        name: "Test Student",
-        email: `test-message-${randomUUID()}@example.com`,
-        emailVerified: true,
-      },
-    }),
-    prisma.user.create({
-      data: {
-        name: "Other Student",
-        email: `test-message-${randomUUID()}@example.com`,
-        emailVerified: true,
-      },
-    }),
-  ]);
+  const user = await prisma.user.create({
+    data: {
+      name: "Test Student",
+      email: `test-message-${randomUUID()}@example.com`,
+      emailVerified: true,
+    },
+  });
   userId = user.id;
-  otherUserId = other.id;
+  conversationId = (await createConversation(userId)).id;
 });
 
 afterEach(async () => {
-  await prisma.message.deleteMany({
-    where: { userId: { in: [userId, otherUserId] } },
-  });
-  await prisma.user.deleteMany({ where: { id: { in: [userId, otherUserId] } } });
+  await prisma.user.delete({ where: { id: userId } });
 });
 
-describe("appendMessages", () => {
-  test("stores a turn so it can be read back after a reload", async () => {
-    await appendMessages(userId, [
+describe("listMessagesForConversation", () => {
+  test("reads a turn back after a reload", async () => {
+    await appendMessages(userId, conversationId, [
       { role: "user", content: "What's overdue?" },
       { role: "assistant", content: "Network Lab, due Saturday." },
     ]);
 
-    const stored = await listMessagesForUser(userId);
+    const stored = await listMessagesForConversation(userId, conversationId);
 
     expect(stored.map((message) => [message.role, message.content])).toEqual([
       ["user", "What's overdue?"],
@@ -57,16 +46,16 @@ describe("appendMessages", () => {
   test("keeps the two halves of a turn in the order they were said", async () => {
     // Both rows land in one call, so an ordering that relied on the clock alone
     // could show the answer above the question.
-    await appendMessages(userId, [
+    await appendMessages(userId, conversationId, [
       { role: "user", content: "First" },
       { role: "assistant", content: "Second" },
     ]);
-    await appendMessages(userId, [
+    await appendMessages(userId, conversationId, [
       { role: "user", content: "Third" },
       { role: "assistant", content: "Fourth" },
     ]);
 
-    const stored = await listMessagesForUser(userId);
+    const stored = await listMessagesForConversation(userId, conversationId);
 
     expect(stored.map((message) => message.content)).toEqual([
       "First",
@@ -75,29 +64,22 @@ describe("appendMessages", () => {
       "Fourth",
     ]);
   });
-});
 
-describe("listMessagesForUser", () => {
-  test("returns nothing for a student who has never asked anything", async () => {
-    expect(await listMessagesForUser(userId)).toEqual([]);
+  test("returns nothing for a thread nobody has spoken into", async () => {
+    expect(await listMessagesForConversation(userId, conversationId)).toEqual([]);
   });
 
-  test("never returns another student's conversation", async () => {
-    await appendMessages(otherUserId, [
-      { role: "user", content: "My private question" },
-    ]);
+  test("returns the most recent messages, oldest first, when a thread is long", async () => {
+    await appendMessages(
+      userId,
+      conversationId,
+      Array.from({ length: MAX_STORED_HISTORY + 4 }, (_, index) => ({
+        role: "user" as const,
+        content: `Message ${index}`,
+      }))
+    );
 
-    expect(await listMessagesForUser(userId)).toEqual([]);
-  });
-
-  test("returns the most recent messages, oldest first, when history is long", async () => {
-    const turns = Array.from({ length: MAX_STORED_HISTORY + 4 }, (_, index) => ({
-      role: "user" as const,
-      content: `Message ${index}`,
-    }));
-    await appendMessages(userId, turns);
-
-    const stored = await listMessagesForUser(userId);
+    const stored = await listMessagesForConversation(userId, conversationId);
 
     expect(stored).toHaveLength(MAX_STORED_HISTORY);
     // The oldest are dropped, not the newest, and what survives reads forwards.

@@ -29,6 +29,7 @@ model User {
   notes         Note[]
   memories      Memory[]
   messages      Message[]
+  conversations Conversation[]
 
   @@unique([email])
   @@map("user")
@@ -39,7 +40,27 @@ enum MessageRole {
   assistant
 }
 
-/// One line of the ongoing conversation with the assistant.
+/// One thread of conversation with the assistant.
+///
+/// Separate threads rather than one endless log, because the assistant reads
+/// the history back every turn: a turn where it claimed something untrue keeps
+/// being read as fact, and starting a new chat is the way out that doesn't
+/// destroy what came before.
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Taken from the opening message. Null until something has been said.
+  title     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+
+  @@index([userId, updatedAt])
+  @@map("conversation")
+}
+
+/// One line of a conversation with the assistant.
 ///
 /// Separate from Memory on purpose: memory is what Mentra has *learned* and
 /// carries into every turn, this is only what was said. Losing a transcript
@@ -51,13 +72,15 @@ model Message {
   /// call can share a createdAt to the millisecond, which would let an answer
   /// sort above its own question.
   seq       Int         @default(autoincrement())
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      MessageRole
-  content   String
-  createdAt DateTime    @default(now())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String
+  createdAt      DateTime     @default(now())
 
-  @@index([userId, seq])
+  @@index([conversationId, seq])
   @@map("message")
 }
 

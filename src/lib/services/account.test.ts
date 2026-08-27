@@ -8,6 +8,7 @@ import { createTask } from "@/lib/services/task";
 import { createNote } from "@/lib/services/note";
 import { createMemory } from "@/lib/services/memory";
 import { appendMessages } from "@/lib/services/message";
+import { createConversation } from "@/lib/services/conversation";
 import { deleteAccount } from "@/lib/services/account";
 
 let userId: string;
@@ -57,7 +58,8 @@ async function seedFullAccount(label: string): Promise<string> {
     courseId: course.data.id,
   });
 
-  await appendMessages(user.id, [
+  const conversation = await createConversation(user.id);
+  await appendMessages(user.id, conversation.id, [
     { role: "user", content: "What should I do tonight?" },
     { role: "assistant", content: "Finish lab." },
   ]);
@@ -124,6 +126,7 @@ describe("deleteAccount", () => {
       tasks,
       memories,
       messages,
+      conversations,
       courses,
       semesters,
       sessions,
@@ -133,6 +136,7 @@ describe("deleteAccount", () => {
         prisma.task.count({ where: { userId } }),
         prisma.memory.count({ where: { userId } }),
         prisma.message.count({ where: { userId } }),
+        prisma.conversation.count({ where: { userId } }),
         prisma.course.count({ where: { semester: { userId } } }),
         prisma.semester.count({ where: { userId } }),
         prisma.session.count({ where: { userId } }),
@@ -144,6 +148,7 @@ describe("deleteAccount", () => {
       tasks,
       memories,
       messages,
+      conversations,
       courses,
       semesters,
       sessions,
@@ -153,6 +158,7 @@ describe("deleteAccount", () => {
       tasks: 0,
       memories: 0,
       messages: 0,
+      conversations: 0,
       courses: 0,
       semesters: 0,
       sessions: 0,

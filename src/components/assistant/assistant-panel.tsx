@@ -1,69 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
+import { AssistantThread } from "@/components/assistant/assistant-thread";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
-type Message = { role: "user" | "assistant"; content: string };
-
-const OPENING_PROMPTS = [
-  "What should I do tonight?",
-  "I only have 45 minutes — what's worth starting?",
-  "What's overdue?",
-];
-
-export function AssistantPanel({
-  initialMessages,
-}: {
-  initialMessages: Message[];
-}) {
+export function AssistantPanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [draft, setDraft] = useState("");
-  const [isThinking, setIsThinking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, isThinking]);
-
-  async function send(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || isThinking) return;
-
-    const next: Message[] = [...messages, { role: "user", content: trimmed }];
-    setMessages(next);
-    setDraft("");
-    setError(null);
-    setIsThinking(true);
-
-    try {
-      const response = await fetch("/api/assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error ?? "The assistant is unavailable right now.");
-        // The turn was never stored, so drop the question from the transcript
-        // rather than leaving it sitting there unanswered after a reload.
-        setMessages(messages);
-        return;
-      }
-
-      setMessages([...next, { role: "assistant", content: data.reply }]);
-    } catch {
-      setError("Couldn't reach the assistant. Check your connection.");
-      setMessages(messages);
-    } finally {
-      setIsThinking(false);
-    }
-  }
 
   if (!isOpen) {
     return (
@@ -101,94 +44,7 @@ export function AssistantPanel({
         </Button>
       </header>
 
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-5 py-4"
-      >
-        {messages.length === 0 ? (
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground">
-              Ask about your work and I&apos;ll look it up before answering.
-            </p>
-            <div className="flex flex-col items-start gap-2">
-              {OPENING_PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  onClick={() => send(prompt)}
-                  className="rounded-md border border-border px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-4">
-            {messages.map((message, index) => (
-              <li
-                key={index}
-                className={
-                  message.role === "user"
-                    ? "flex flex-col items-end gap-1"
-                    : "flex flex-col gap-1"
-                }
-              >
-                <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                  {message.role === "user" ? "You" : "Mentra"}
-                </span>
-                <p
-                  className={
-                    message.role === "user"
-                      ? "max-w-[85%] rounded-md bg-muted px-3 py-2 text-sm whitespace-pre-wrap"
-                      : "text-sm whitespace-pre-wrap"
-                  }
-                >
-                  {message.content}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {isThinking && (
-          <p className="mt-4 text-xs italic text-muted-foreground">
-            Looking it up…
-          </p>
-        )}
-
-        {error && (
-          <div
-            role="alert"
-            className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </div>
-        )}
-      </div>
-
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          send(draft);
-        }}
-        className="flex items-center gap-2 border-t border-border px-5 py-4"
-      >
-        <label htmlFor="assistant-input" className="sr-only">
-          Ask Mentra
-        </label>
-        <Input
-          id="assistant-input"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="What should I do tonight?"
-          autoComplete="off"
-          disabled={isThinking}
-        />
-        <Button type="submit" size="sm" disabled={isThinking || !draft.trim()}>
-          Send
-        </Button>
-      </form>
+      <AssistantThread variant="panel" />
     </aside>
   );
 }

@@ -145,6 +145,9 @@ describe("toolDefinitions", () => {
         "create_course",
         "create_semester",
         "list_semesters",
+        "update_note",
+        "delete_note",
+        "delete_task",
       ].sort()
     );
   });
@@ -257,5 +260,61 @@ describe("validateToolCall — finding notes attached to a piece of work", () =>
     const result = validateToolCall("search_notes", { query: "insulin" });
 
     expect(result.ok).toBe(true);
+  });
+});
+
+describe("validateToolCall — correcting what was already filed", () => {
+  test("accepts update_note changing the body", () => {
+    const result = validateToolCall("update_note", {
+      noteId: "note_1",
+      body: "The corrected text.",
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  test("accepts update_note re-filing a note onto a piece of work", () => {
+    const result = validateToolCall("update_note", {
+      noteId: "note_1",
+      taskId: "task_9",
+    });
+
+    expect(
+      result.ok && result.name === "update_note" && result.args.taskId
+    ).toBe("task_9");
+  });
+
+  test("rejects update_note without saying which note", () => {
+    const result = validateToolCall("update_note", { body: "New text." });
+
+    expect(result.ok).toBe(false);
+  });
+
+  test("accepts delete_note", () => {
+    const result = validateToolCall("delete_note", { noteId: "note_1" });
+
+    expect(result).toEqual({
+      ok: true,
+      name: "delete_note",
+      args: { noteId: "note_1" },
+    });
+  });
+
+  test("rejects delete_note with no note named", () => {
+    expect(validateToolCall("delete_note", {}).ok).toBe(false);
+  });
+
+  test("accepts delete_task", () => {
+    const result = validateToolCall("delete_task", { taskId: "task_1" });
+
+    expect(result).toEqual({
+      ok: true,
+      name: "delete_task",
+      args: { taskId: "task_1" },
+    });
+  });
+
+  test("rejects delete_task with an empty id", () => {
+    expect(validateToolCall("delete_task", { taskId: "" }).ok).toBe(false);
   });
 });

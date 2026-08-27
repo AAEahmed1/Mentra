@@ -1,12 +1,18 @@
 import {
   createTask,
   completeTask,
+  deleteTask,
   listTasksForUser,
   updateTask,
 } from "@/lib/services/task";
 import { createCourse, listCoursesForUser } from "@/lib/services/course";
 import { createSemester, listSemestersForUser } from "@/lib/services/semester";
-import { createNote, searchNotesForUser } from "@/lib/services/note";
+import {
+  createNote,
+  deleteNote,
+  searchNotesForUser,
+  updateNote,
+} from "@/lib/services/note";
 import { createMemory, listMemoriesForUser } from "@/lib/services/memory";
 import { rankTasks } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
@@ -195,6 +201,39 @@ export async function executeToolCall(
                 ? "That course does not exist."
                 : "That piece of work does not exist.",
           };
+    }
+
+    case "update_note": {
+      const { noteId, ...changes } = call.args;
+      const result = await updateNote(userId, noteId, changes);
+
+      return result.success
+        ? { updated: true, id: result.data.id, title: result.data.title }
+        : {
+            updated: false,
+            error:
+              result.error === "course_not_found"
+                ? "That course does not exist."
+                : result.error === "task_not_found"
+                  ? "That piece of work does not exist."
+                  : "That note does not exist.",
+          };
+    }
+
+    case "delete_note": {
+      const result = await deleteNote(userId, call.args.noteId);
+
+      return result.success
+        ? { deleted: true }
+        : { deleted: false, error: "That note does not exist." };
+    }
+
+    case "delete_task": {
+      const result = await deleteTask(userId, call.args.taskId);
+
+      return result.success
+        ? { deleted: true }
+        : { deleted: false, error: "That piece of work does not exist." };
     }
 
     case "list_semesters": {

@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import type { Message, MessageRole } from "@/generated/prisma/client";
+import { MAX_TITLE_LENGTH } from "@/lib/services/conversation";
 
 /**
- * How much of the conversation is read back. Older lines stay in the table —
+ * How much of a conversation is read back. Older lines stay in the table —
  * this is the window the student sees and the assistant is given, not a
  * retention policy.
  */
@@ -13,28 +14,59 @@ export type MessageInput = {
   content: string;
 };
 
+/**
+ * Adds a turn to a conversation.
+ *
+ * The conversation is looked up by id *and* owner, so naming someone else's
+ * thread throws rather than writing into it. Titling happens here because the
+ * opening question is the only name a thread ever gets, and it is only known
+ * once something has been said.
+ */
 export async function appendMessages(
   userId: string,
+  conversationId: string,
   messages: MessageInput[]
 ): Promise<void> {
   if (messages.length === 0) return;
 
-  await prisma.message.createMany({
-    data: messages.map((message) => ({ ...message, userId })),
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, userId },
+    select: { id: true, title: true },
   });
+
+  if (!conversation) {
+    throw new Error("That conversation does not exist.");
+  }
+
+  const opening = messages.find((message) => message.role === "user");
+
+  await prisma.$transaction([
+    prisma.message.createMany({
+      data: messages.map((message) => ({ ...message, userId, conversationId })),
+    }),
+    prisma.conversation.update({
+      where: { id: conversationId },
+      data:
+        conversation.title === null && opening
+          ? { title: opening.content.slice(0, MAX_TITLE_LENGTH) }
+          : // Touched even when the title stands, so the thread sorts as used.
+            { updatedAt: new Date() },
+    }),
+  ]);
 }
 
 /**
- * The tail of a student's conversation, oldest first — the order it is read and
- * replayed in. Ordered by `seq` rather than `createdAt`, which is not unique
- * enough to keep a question above its answer.
+ * The tail of a conversation, oldest first — the order it is read and replayed
+ * in. Ordered by `seq` rather than `createdAt`, which is not unique enough to
+ * keep a question above its answer.
  */
-export async function listMessagesForUser(
+export async function listMessagesForConversation(
   userId: string,
+  conversationId: string,
   limit: number = MAX_STORED_HISTORY
 ): Promise<Message[]> {
   const newestFirst = await prisma.message.findMany({
-    where: { userId },
+    where: { conversationId, userId },
     orderBy: { seq: "desc" },
     take: limit,
   });

@@ -5,7 +5,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { auth } from "@/lib/auth";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
-import { listMessagesForUser } from "@/lib/services/message";
+import { ThreadSeed } from "@/components/assistant/thread-seed";
+import { listMessagesForConversation } from "@/lib/services/message";
+import { latestConversationForUser } from "@/lib/services/conversation";
 
 const archivo = Archivo({
   variable: "--font-sans",
@@ -23,10 +25,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   // Read here rather than in the panel so the conversation is already on the
-  // page when it opens, instead of appearing a moment later.
+  // page when it opens, instead of appearing a moment later. The panel carries
+  // on the most recent thread; a new one is started from the chats page.
   const conversation = session?.user
-    ? await listMessagesForUser(session.user.id)
-    : [];
+    ? await latestConversationForUser(session.user.id)
+    : null;
+  const history =
+    session?.user && conversation
+      ? await listMessagesForConversation(session.user.id, conversation.id)
+      : [];
 
   return (
     <html
@@ -53,12 +60,21 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           {session?.user && (
-            <AssistantPanel
-              initialMessages={conversation.map((message) => ({
-                role: message.role,
-                content: message.content,
-              }))}
-            />
+            <>
+              {/*
+                Only when nothing is open yet: a chat page seeds the thread it
+                is showing, and the most recent one must not overwrite it.
+              */}
+              <ThreadSeed
+                onlyIfEmpty
+                conversationId={conversation?.id ?? null}
+                messages={history.map((message) => ({
+                  role: message.role,
+                  content: message.content,
+                }))}
+              />
+              <AssistantPanel />
+            </>
           )}
         </ThemeProvider>
       </body>
