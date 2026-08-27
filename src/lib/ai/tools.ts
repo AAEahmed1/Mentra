@@ -70,6 +70,25 @@ const toolSchemas = {
     type: memoryType,
     source: memorySource.default("inferred"),
   }),
+  create_note: z.object({
+    title: z.string().min(1),
+    body: z.string().min(1),
+    courseId: z.string().optional(),
+    taskId: z.string().optional(),
+  }),
+  create_course: z.object({
+    semesterId: z.string().min(1),
+    name: z.string().min(1),
+    code: z.string().optional(),
+    professor: z.string().optional(),
+    credits: z.number().int().nonnegative().optional(),
+  }),
+  create_semester: z.object({
+    name: z.string().min(1),
+    startDate: z.string().min(1),
+    endDate: z.string().min(1),
+  }),
+  list_semesters: empty,
 } as const;
 
 export type ToolName = keyof typeof toolSchemas;
@@ -215,6 +234,60 @@ export const toolDefinitions: ToolDefinition[] = [
         ),
       },
       required: ["content", "type"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "create_note",
+    description:
+      "Write a note into the student's own notes. Optionally file it under a course, or attach it to the specific piece of work it is about.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: str("A short name for the note."),
+        body: str("The note itself, in the student's own terms."),
+        courseId: str("Course id to file it under, if it belongs to one."),
+        taskId: str("Task id this note is about, if it is about one."),
+      },
+      required: ["title", "body"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "list_semesters",
+    description:
+      "List the student's terms with their ids and dates. Call this before creating a course, to find the term it belongs in.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "create_course",
+    description:
+      "Add a course to one of the student's terms. Get the term id from list_semesters first.",
+    parameters: {
+      type: "object",
+      properties: {
+        semesterId: str("The term this course runs in."),
+        name: str("What the course is called."),
+        code: str("Course code, such as NURS 302."),
+        professor: str("Who teaches it."),
+        credits: int("Credit value."),
+      },
+      required: ["semesterId", "name"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "create_semester",
+    description:
+      "Add a term for the student. Dates are YYYY-MM-DD. Only do this when no suitable term exists.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: str("What the term is called, such as Autumn 2026."),
+        startDate: str("When it starts, as YYYY-MM-DD."),
+        endDate: str("When it ends, as YYYY-MM-DD."),
+      },
+      required: ["name", "startDate", "endDate"],
       additionalProperties: false,
     },
   },

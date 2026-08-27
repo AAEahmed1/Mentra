@@ -141,6 +141,10 @@ describe("toolDefinitions", () => {
         "search_memory",
         "search_notes",
         "update_task",
+        "create_note",
+        "create_course",
+        "create_semester",
+        "list_semesters",
       ].sort()
     );
   });
@@ -155,5 +159,87 @@ describe("toolDefinitions", () => {
     expect(toolDefinitions.map((tool) => tool.name).sort()).toEqual(
       [...TOOL_NAMES].sort()
     );
+  });
+});
+
+describe("validateToolCall — writing to every surface, not only tasks", () => {
+  test("accepts a note with just a title and body", () => {
+    const result = validateToolCall("create_note", {
+      title: "Insulin timing",
+      body: "Rapid-acting goes 15 minutes before meals.",
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  test("accepts a note attached to a piece of work", () => {
+    const result = validateToolCall("create_note", {
+      title: "Watch the units",
+      body: "mg vs mcg is where the mistakes came from.",
+      taskId: "task_123",
+    });
+
+    expect(
+      result.ok && result.name === "create_note" && result.args.taskId
+    ).toBe("task_123");
+  });
+
+  test("rejects a note with no body, which would file an empty thought", () => {
+    const result = validateToolCall("create_note", { title: "Insulin timing" });
+
+    expect(result.ok).toBe(false);
+  });
+
+  test("accepts a course under a named term", () => {
+    const result = validateToolCall("create_course", {
+      name: "Mental Health Nursing",
+      code: "NURS 320",
+      semesterId: "sem_1",
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  test("rejects a course with no term to sit in", () => {
+    const result = validateToolCall("create_course", {
+      name: "Mental Health Nursing",
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  test("rejects a course whose credits are not a number", () => {
+    const result = validateToolCall("create_course", {
+      name: "Mental Health Nursing",
+      semesterId: "sem_1",
+      credits: "twenty",
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  test("accepts a term with a start and an end", () => {
+    const result = validateToolCall("create_semester", {
+      name: "Autumn 2026",
+      startDate: "2026-09-01",
+      endDate: "2026-12-18",
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  test("rejects a term missing its end date", () => {
+    const result = validateToolCall("create_semester", {
+      name: "Autumn 2026",
+      startDate: "2026-09-01",
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  test("accepts list_semesters, which takes no arguments", () => {
+    const result = validateToolCall("list_semesters", {});
+
+    expect(result).toEqual({ ok: true, name: "list_semesters", args: {} });
   });
 });

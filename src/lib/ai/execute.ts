@@ -4,8 +4,9 @@ import {
   listTasksForUser,
   updateTask,
 } from "@/lib/services/task";
-import { listCoursesForUser } from "@/lib/services/course";
-import { searchNotesForUser } from "@/lib/services/note";
+import { createCourse, listCoursesForUser } from "@/lib/services/course";
+import { createSemester, listSemestersForUser } from "@/lib/services/semester";
+import { createNote, searchNotesForUser } from "@/lib/services/note";
 import { createMemory, listMemoriesForUser } from "@/lib/services/memory";
 import { rankTasks } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
@@ -136,6 +137,58 @@ export async function executeToolCall(
         type: memory.type,
         source: memory.source,
       }));
+    }
+
+    case "create_note": {
+      const result = await createNote(userId, {
+        title: call.args.title,
+        body: call.args.body,
+        courseId: call.args.courseId,
+        taskId: call.args.taskId,
+      });
+
+      return result.success
+        ? { created: true, id: result.data.id, title: result.data.title }
+        : {
+            created: false,
+            error:
+              result.error === "course_not_found"
+                ? "That course does not exist."
+                : "That piece of work does not exist.",
+          };
+    }
+
+    case "list_semesters": {
+      const semesters = await listSemestersForUser(userId);
+      return semesters.map((semester) => ({
+        id: semester.id,
+        name: semester.name,
+        startDate: semester.startDate.toISOString().slice(0, 10),
+        endDate: semester.endDate.toISOString().slice(0, 10),
+      }));
+    }
+
+    case "create_course": {
+      const result = await createCourse(userId, call.args.semesterId, {
+        name: call.args.name,
+        code: call.args.code,
+        professor: call.args.professor,
+        credits: call.args.credits,
+      });
+
+      return result.success
+        ? { created: true, id: result.data.id, name: result.data.name }
+        : { created: false, error: "That term does not exist." };
+    }
+
+    case "create_semester": {
+      const semester = await createSemester(userId, {
+        name: call.args.name,
+        startDate: new Date(call.args.startDate),
+        endDate: new Date(call.args.endDate),
+      });
+
+      return { created: true, id: semester.id, name: semester.name };
     }
 
     case "save_memory": {
