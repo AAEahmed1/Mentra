@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="relative flex min-h-svh flex-col items-center justify-center bg-background px-6 py-16">
+    <div className="relative flex min-h-svh flex-col items-center justify-center px-6 py-16">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>

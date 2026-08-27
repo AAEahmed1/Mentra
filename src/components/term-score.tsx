@@ -111,7 +111,10 @@ export function TermScore({
         <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
           The term
         </h2>
-        <span aria-hidden="true" className="h-px flex-1 bg-rule" />
+        <span
+          aria-hidden="true"
+          className="animate-rule-draw h-px flex-1 bg-rule"
+        />
       </div>
 
       <div className="mt-5 grid grid-cols-[12rem_1fr] gap-x-4 overflow-visible">
@@ -133,7 +136,7 @@ export function TermScore({
           })}
         </div>
 
-        {lanes.map((lane) => (
+        {lanes.map((lane, laneIndex) => (
           <div key={lane.key} className="contents">
             <div className="flex h-12 items-center justify-end pr-1">
               <span
@@ -144,7 +147,12 @@ export function TermScore({
               </span>
             </div>
 
-            <div className="lane-rule relative h-12">
+            {/* --i is the lane's place in the score; the rule, its blocks and
+                everything after read their timing from it. */}
+            <div
+              className="lane-rule relative h-12"
+              style={{ "--i": laneIndex } as React.CSSProperties}
+            >
               {/* The NOW rule crosses every lane, which is the point of it. */}
               <span
                 aria-hidden="true"
@@ -152,7 +160,7 @@ export function TermScore({
                 style={{ left: `${nowPercent}%` }}
               />
 
-              {lane.entries.map((entry) => {
+              {lane.entries.map((entry, blockIndex) => {
                 const days = entry.factors.daysUntilDue as number;
                 const overdue = entry.factors.urgency === "overdue";
                 const noteCount = noteCountByTaskId.get(entry.task.id) ?? 0;
@@ -173,13 +181,20 @@ export function TermScore({
                     tabIndex={0}
                     className={
                       overdue
-                        ? "group absolute top-1/2 h-6 -translate-y-1/2 rounded-sm border border-attention bg-attention/30 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                        : "group absolute top-1/2 h-6 -translate-y-1/2 rounded-sm border border-rule bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                        ? "animate-block-land group absolute top-1/2 h-6 rounded-sm border border-attention bg-attention/30 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                        : "animate-block-land group absolute top-1/2 h-6 rounded-sm border border-rule bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                     }
-                    style={{
-                      left: `${offsetPercent(days)}%`,
-                      width: `${widthPercent(entry.task.estimatedDuration)}%`,
-                    }}
+                    style={
+                      {
+                        left: `${offsetPercent(days)}%`,
+                        width: `${widthPercent(entry.task.estimatedDuration)}%`,
+                        // The block was vertically centred by a transform, which
+                        // the landing animation now owns; margin does it instead
+                        // so the two never fight over the same property.
+                        marginTop: "-0.75rem",
+                        "--j": blockIndex,
+                      } as React.CSSProperties
+                    }
                   >
                     <span className="sr-only">
                       {entry.task.title} — {due}

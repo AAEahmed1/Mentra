@@ -37,7 +37,7 @@ export default async function CoursesPage() {
     >
       {semestersWithCourses.map(({ semester, courses }) => (
         <section key={semester.id} className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-rule pb-3">
+          <div className="group/term flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-rule pb-3">
             <div className="min-w-0">
               <h2 className="text-lg font-semibold tracking-tight">
                 {semester.name}

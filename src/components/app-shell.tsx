@@ -18,7 +18,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-svh flex-col bg-background md:flex-row">
+    <div className="flex min-h-svh flex-col md:flex-row">
       <AppSidebar />
 
       <div className="min-w-0 flex-1">

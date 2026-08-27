@@ -158,7 +158,7 @@ export default async function DashboardPage({
             </h2>
             <span
               aria-hidden="true"
-              className="animate-now-rule h-px flex-1 bg-now"
+              className="animate-rule-draw h-px flex-1 bg-now"
             />
             {/*
               Sits on the Now rule because it changes what Now is: the ranking
@@ -167,8 +167,14 @@ export default async function DashboardPage({
             <TimeAvailable selected={availableMinutes} />
           </div>
 
-          {/* The struck item: pulled forward off the lane it sits on. */}
-          <article className="flex flex-col gap-5 border-l border-now pl-5 sm:pl-6">
+          {/* The struck item: pulled forward off the lane it sits on. The
+              left rule is drawn rather than bordered so it can be ruled down
+              the way the lanes are ruled across. */}
+          <article className="animate-struck relative flex flex-col gap-5 pl-5 sm:pl-6">
+            <span
+              aria-hidden="true"
+              className="animate-struck-rule absolute inset-y-0 left-0 w-px bg-now"
+            />
             <div className="flex items-start justify-between gap-6">
               <div className="min-w-0">
                 <h3 className="text-4xl leading-[1.1] font-semibold tracking-tight text-balance">
@@ -213,7 +219,10 @@ export default async function DashboardPage({
                 <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
                   After that
                 </h2>
-                <span aria-hidden="true" className="h-px flex-1 bg-rule" />
+                <span
+                  aria-hidden="true"
+                  className="animate-rule-draw h-px flex-1 bg-rule"
+                />
               </div>
 
               <ul className="flex flex-col">

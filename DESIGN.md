@@ -155,13 +155,15 @@ Mentra reads a term the way a musician reads a score: every course is a line, ev
 
 The system is achromatic almost everywhere. Colour is not decoration here, it is notation: indigo marks now and next, amber marks what has slipped, and work that is simply on track carries no colour at all. That restraint is what makes a single indigo hairline down the left of tonight's item legible from across the room. Density is high but unhurried — 14px body copy, 12px figures in tabular columns, generous vertical air between sections and hairline separators instead of card walls.
 
-Stillness is the default. The build authors exactly one motion moment: the NOW rule arriving on load, scaling down the lanes and settling in 620ms. Everything else transitions only in response to a pointer or a focus ring. Both modes carry the same structure; dark mode lifts the two signal hues rather than re-designing anything.
+Motion is notation being written. A page of music is made in an order — the staves are ruled, the notes are set on them, and the cursor lands on the current bar last — and the term arrives the same way. The sequence is the argument: it says these lanes are one field and this rule crosses all of them at today. Nothing else on any surface moves except where something has actually happened. Both modes carry the same structure; dark mode lifts the two signal hues rather than re-designing anything.
 
 **Key Characteristics:**
 - Hairline rules instead of cards; no boxed dashboard tiles on any signed-in surface.
+- A sheet with tooth under a lamp, not a flat fill.
 - One typeface (Archivo) doing display, body, label and figure work — `--font-serif` and `--font-mono` are deliberately aliased to `--font-sans`.
 - Colour used only as signal: indigo for now/next, amber for slipped, nothing for on-track.
 - Duration drawn as extent, not only written as a numeral.
+- The score writes itself on arrival: rules ruled, work landed, the NOW rule sweeping last.
 - Tabular figures everywhere a number can be compared down a column.
 - A collapsible left margin (240px / 64px) that names every line and never leaves the page.
 
@@ -235,6 +237,56 @@ The term score itself is a two-column grid (`12rem` margin of course names, then
 **The One Plane Rule.** Every signed-in page is the margin plus one column. Sections are separated by space and hairlines, not by nested containers or a tile grid.
 
 **The Lane Rule.** Work on a timeline sits on a 1px horizontal rule drawn as a background gradient (`.lane-rule`), 12rem of names to its left and the NOW rule crossing it. A lane is 48px tall and its blocks are 24px.
+
+## Material
+
+The page is a sheet, not a fill. Two layers say so, and both sit at the edge of perception — you should not be able to point at the texture, only notice that the surface stopped looking like a painted rectangle.
+
+**Tooth.** Fractal noise (an inline `feTurbulence` data URI, 160px tile, desaturated) laid over the whole viewport at 3.8% in light and 6% in dark. It is laid *over* rather than under, because the margin and every shell paint their own opaque field and would hide it; at that strength it is far below the threshold where it could touch the legibility of anything beneath. Dark stock takes more grain than light — a near-black field bands where paper does not, and the noise is what breaks it up.
+
+**A lamp at the upper left.** A fixed radial gradient on the root element, so a long page does not drag its own lighting down the screen as it scrolls, and so no page's field can cover it. The two modes state the same lamp in opposite directions: paper is lit from outside and so darkens as it falls away from the light (transparent at the lamp, 5% ink in the far corner); a dark surface is read by the light it returns and so lifts where the light lands (7% at the lamp, transparent by 58%). Carrying one gradient into both modes would brighten the wrong corner.
+
+Both tints are mixed `in oklab`. Interpolating a hue against `transparent` leaves the hue undefined, and the tint has to stay the same blue-black as the ink it is made from.
+
+### Named Rules
+
+**The One Sheet Rule.** The grain covers the whole viewport, margin included — one sheet, folded, not two stocks side by side. Do not give a surface its own texture to distinguish it; distinguish it with a field change or a rule, as everything else does.
+
+**The Imperceptible-Material Rule.** Texture is material, never pattern. If a viewer can describe the texture as a thing they can see, it is too strong. No visible grain, no paper photograph, no repeating motif.
+
+## Motion
+
+The system has one authored sequence and no other entrance choreography. On the dashboard the term is written in the order a score is made, and the whole thing is over in under a second — a student opening Mentra at 11pm is here to read one answer, not to watch it assemble.
+
+### The Score Writing (signature)
+
+1. **The staves are ruled.** Section rules (`.animate-rule-draw`, 420ms) draw left to right from their label. Each lane's hairline is a scaled pseudo-element on `.lane-rule`, drawing across on the same curve, staggered 55ms per lane from its own `--i`.
+2. **The work lands.** Blocks scale from their own left edge and fade in over 300ms (`.animate-block-land`), each waiting for the lane beneath it — `240ms + --i × 55ms + --j × 40ms`. A block grows along the axis its width already means, so landing reads as duration being written rather than a box appearing.
+3. **The cursor arrives.** The NOW rule sweeps down through every lane (`.animate-now-rule`, 480ms, delayed 460ms) once there are lanes for it to cross. It is deliberately last: it is the only mark that belongs to all the lines at once.
+4. **Tonight settles.** The struck item rises 6px into place while its indigo left rule is ruled downward (`.animate-struck` / `.animate-struck-rule`, delayed 300ms).
+
+Everything is transform and opacity. No step animates a layout property, and the lane rule is scaled rather than re-painted at a new width.
+
+### Supporting motion
+
+Only two, and both report state rather than decorate it:
+
+- **A turn arriving** in the assistant (`.animate-turn`, 220ms): the reply is the one thing on that surface that happens, so it is the one thing that moves.
+- **The working indicator** (`.animate-working`): a 1.4s opacity pulse under "Looking it up…", saying the assistant is thinking rather than stalled.
+
+Everything else transitions only in response to a pointer or a focus ring, at 150ms or less.
+
+### Timing and easing
+
+`cubic-bezier(0.16, 1, 0.3, 1)` throughout — a confident arrival that decelerates hard. Feedback is 100–220ms, the authored steps 300–520ms, and the full sequence resolves by roughly 940ms. Bounce and elastic curves are not part of the system.
+
+### Named Rules
+
+**The Written-Score Rule.** The entrance sequence belongs to the dashboard's term and to nothing else. Do not reuse it as a general page-load reveal, do not stagger arbitrary sections, and do not add a second authored moment on another surface.
+
+**The Movement-Means-Something Rule.** Outside the authored sequence, a thing moves only when it has happened: a turn arrived, work is being done, a control was pressed. Movement for liveness alone is animation debt.
+
+**The Reduced-Motion Rule.** `prefers-reduced-motion` removes every step of the sequence outright — the score is simply already written, with nothing hidden, offset, or scaled. The one exception is the working indicator, which keeps a gentler pulse, because it is feedback: silencing it would leave a student unsure whether anything is happening.
 
 ## Elevation & Depth
 
@@ -311,21 +363,23 @@ A single centred column (24rem for auth, 28rem for onboarding) on the page field
 - **Do** state every colour-marked state in words too — "2 days over", "due today", "high priority".
 - **Do** draw estimates as extent as well as figures, at a consistent minutes-to-length scale.
 - **Do** separate content with 1px rules (`--rule`) and space rather than with boxes.
+- **Do** keep the sheet's grain and lighting below the threshold of description — material, never pattern.
 - **Do** use Archivo at 400/500/600 for every role, and tabular figures for anything comparable down a column.
 - **Do** name controls in ordinary words — "Open my work", "Write a note", "Add a course", "What Mentra knows".
 - **Do** open each region with a 12px uppercase section label followed by a hairline to the end of the measure.
 - **Do** give focus a 3px indigo ring at 50% opacity plus a solid border shift, on every interactive element.
 - **Do** draw icons as inline SVG on the 18px grid at 1.4px stroke in `currentColor`.
 - **Do** hide the term score below `md` and fall back to the ranked list rather than compressing lanes.
-- **Do** respect `prefers-reduced-motion`: the NOW rule's arrival is disabled outright, not merely shortened.
+- **Do** respect `prefers-reduced-motion`: the writing sequence is disabled outright, not merely shortened, while the working indicator keeps a gentler pulse.
 
 ### Don't:
 - **Don't** introduce red, green, or any third hue for status. Red is reserved for destructive controls and error alerts and carries no urgency meaning.
 - **Don't** thicken a coloured left rule past 1px, or use one on an alert — alerts take an all-round border so the left rule keeps meaning "this is the one under the cursor".
 - **Don't** put shadows on content. Only the assistant panel and its summoning button are allowed to float.
+- **Don't** paint an opaque page-sized field in a shell or route — it covers the sheet's lighting. The root element owns the background.
 - **Don't** add a second typeface, a serif, or a mono; `--font-serif` and `--font-mono` are aliases of `--font-sans` on purpose.
 - **Don't** lay signed-in content out as a grid of cards or tiles — the thesis is one plane with lanes on it.
-- **Don't** animate anything beyond the one authored moment (the NOW rule landing) and pointer/focus state transitions.
+- **Don't** animate anything beyond the authored sequence (the score writing itself), the two state signals, and pointer/focus transitions. No scroll reveals, no staggered sections elsewhere, no hover lifts.
 - **Don't** use invented letter-abbreviations (TDY, CRS) or icon fonts in place of drawn icons.
 - **Don't** use the uppercase 12px label as a kicker or eyebrow above a headline; it labels a region and always carries its rule.
 - **Don't** put validation in a toast that vanishes — errors are placed in the form, in place.

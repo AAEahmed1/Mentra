@@ -82,10 +82,13 @@ export function AssistantThread({ variant }: { variant: "panel" | "page" }) {
             {messages.map((message, index) => (
               <li
                 key={index}
+                // A turn arrives rather than appearing: the reply is the one
+                // thing on this surface that happens, so it is the one thing
+                // that moves.
                 className={
                   message.role === "user"
-                    ? "flex flex-col items-end gap-1"
-                    : "flex flex-col gap-1"
+                    ? "animate-turn flex flex-col items-end gap-1"
+                    : "animate-turn flex flex-col gap-1"
                 }
               >
                 <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
@@ -106,7 +109,7 @@ export function AssistantThread({ variant }: { variant: "panel" | "page" }) {
         )}
 
         {isThinking && (
-          <p className="mt-4 text-xs italic text-muted-foreground">
+          <p className="animate-working mt-4 text-xs italic text-muted-foreground">
             Looking it up…
           </p>
         )}

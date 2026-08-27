@@ -150,14 +150,82 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "cv05" 1;
-  }
+  /*
+    THE SHEET
+    ---------
+    The world is paper and ink, and paper is never a flat fill: it has tooth,
+    and it sits under a light. Two layers say so, and both are deliberately at
+    the edge of perception — you should not be able to point at the texture,
+    only notice that the page stopped looking like a painted rectangle.
+
+    The lighting lives on the root element rather than on `body`, because every
+    signed-in page paints its own field and would otherwise cover it. It falls
+    away from a lamp at the upper left: clear where the light is, faintly inked
+    in the far corner, fixed to the viewport so a long page does not drag its
+    own lighting down the screen as it scrolls.
+
+    Mixed in oklab, not oklch: interpolating a hue against `transparent` leaves
+    the hue undefined, and the tint has to stay the same blue-black as the ink
+    it is made from.
+  */
   html {
     @apply font-sans;
+    background-color: var(--background);
+    background-image: radial-gradient(
+      125% 95% at 8% -12%,
+      transparent 0%,
+      transparent 38%,
+      color-mix(in oklab, var(--foreground) 5%, transparent) 100%
+    );
+    background-attachment: fixed;
   }
 
+  /*
+    The same lamp, stated the other way round. Paper is lit from outside, so it
+    darkens as it falls away from the light; a dark surface is read by the light
+    it returns, so it lifts where the light lands. Carrying the light-mode
+    gradient into dark would brighten the far corner instead of the near one,
+    which is the opposite of what a lit surface does.
+  */
+  html.dark {
+    background-image: radial-gradient(
+      110% 80% at 8% -12%,
+      color-mix(in oklab, var(--foreground) 7%, transparent) 0%,
+      transparent 58%
+    );
+  }
+
+  body {
+    @apply text-foreground;
+    font-feature-settings: "cv05" 1;
+    background-color: transparent;
+  }
+
+  /*
+    The tooth, over the whole viewport including the margin — one sheet, folded,
+    not two stocks side by side. Laid over the page rather than under it because
+    the margin and every app shell paint their own opaque field; at three or four
+    percent the grain is far below the threshold where it could touch the
+    legibility of text underneath.
+  */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.038;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23t)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  /*
+    Dark stock takes more grain than light: a near-black field shows banding
+    where paper does not, and the noise is what breaks it up.
+  */
+  .dark body::after {
+    opacity: 0.06;
+  }
   /* Figures line up in columns — durations and dates are read as a stack. */
   .tabular-nums-mono,
   time,
@@ -203,26 +271,171 @@
     The lane rule: the hairline every piece of work sits on, the way a stave
     carries its notes. Drawn as a background so a lane can hold anything.
   */
-  .lane-rule {
+  .lane-rule::before {
+    content: "";
+    position: absolute;
+    inset: 0;
     background-image: linear-gradient(to right, var(--rule) 0 100%);
     background-size: 100% 1px;
     background-repeat: no-repeat;
     background-position: 0 50%;
+    transform-origin: left;
   }
 
   /*
-    The one authored moment: the NOW rule arriving. It sweeps down the lanes
-    on load and settles, the way a cursor lands on the current bar. Everything
-    else in the system is still.
+    THE AUTHORED MOMENT: the score is written.
+    ------------------------------------------
+    A page of notation is made in an order — the staves are ruled, the notes
+    are set on them, and the cursor lands on the current bar last. The term
+    arrives the same way, and the sequence is the thesis rather than
+    decoration: it says these lanes are one field, and this rule crosses all
+    of them at today.
+
+    Every step reads its position from `--i`, set inline where the element
+    knows its own index. Nothing here animates layout — the lane rule is a
+    scaled pseudo-element and the blocks scale from their own left edge, so
+    the whole entrance is transform and opacity.
+
+    The whole thing is over in under a second. This is an Operate surface: a
+    student opening it at 11pm is here to read one answer, not to watch it
+    assemble.
   */
+  .animate-rule-draw {
+    animation: rule-draw 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: left;
+  }
+
+  .lane-rule::before {
+    animation: rule-draw 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(80ms + var(--i, 0) * 55ms);
+  }
+
+  .animate-block-land {
+    animation: block-land 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(240ms + var(--i, 0) * 55ms + var(--j, 0) * 40ms);
+    transform-origin: left center;
+  }
+
+  /* The cursor landing on the current bar, after the lanes exist to cross. */
   .animate-now-rule {
-    animation: now-rule-land 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: now-rule-land 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 460ms;
     transform-origin: top;
   }
+
+  /* Tonight's item, settling once the score behind it has been drawn. */
+  .animate-struck {
+    animation: struck-settle 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 300ms;
+  }
+
+  .animate-struck-rule {
+    animation: rule-draw-down 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 300ms;
+    transform-origin: top;
+  }
+
+  /* A turn arriving in the assistant: state, not entrance choreography. */
+  .animate-turn {
+    animation: turn-arrive 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Says the assistant is working, not that the page is decorated. */
+  .animate-working {
+    animation: working 1.4s ease-in-out infinite;
+  }
+
+  /*
+    Reduced motion keeps every meaning and drops every movement: the score is
+    simply already written. The working indicator keeps a gentler pulse rather
+    than going silent, because it is feedback — removing it would leave a
+    student unsure whether anything is happening.
+  */
   @media (prefers-reduced-motion: reduce) {
-    .animate-now-rule {
+    .animate-rule-draw,
+    .lane-rule::before,
+    .animate-block-land,
+    .animate-now-rule,
+    .animate-struck,
+    .animate-struck-rule,
+    .animate-turn {
       animation: none;
     }
+
+    .animate-working {
+      animation: working-reduced 2s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes rule-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes rule-draw-down {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes block-land {
+  from {
+    opacity: 0;
+    transform: scaleX(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes struck-settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes turn-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes working {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes working-reduced {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.9;
   }
 }
 
