@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { auth } from "@/lib/auth";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
+import { listMessagesForUser } from "@/lib/services/message";
 
 const archivo = Archivo({
   variable: "--font-sans",
@@ -20,6 +21,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Mounted here rather than per-page so the assistant is reachable from every
   // authenticated screen without each page having to remember to include it.
   const session = await auth.api.getSession({ headers: await headers() });
+
+  // Read here rather than in the panel so the conversation is already on the
+  // page when it opens, instead of appearing a moment later.
+  const conversation = session?.user
+    ? await listMessagesForUser(session.user.id)
+    : [];
 
   return (
     <html
@@ -45,7 +52,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
-          {session?.user && <AssistantPanel />}
+          {session?.user && (
+            <AssistantPanel
+              initialMessages={conversation.map((message) => ({
+                role: message.role,
+                content: message.content,
+              }))}
+            />
+          )}
         </ThemeProvider>
       </body>
     </html>

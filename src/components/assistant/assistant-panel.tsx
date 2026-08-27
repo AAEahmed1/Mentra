@@ -13,9 +13,13 @@ const OPENING_PROMPTS = [
   "What's overdue?",
 ];
 
-export function AssistantPanel() {
+export function AssistantPanel({
+  initialMessages,
+}: {
+  initialMessages: Message[];
+}) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [draft, setDraft] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,19 +43,23 @@ export function AssistantPanel() {
       const response = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.slice(-20) }),
+        body: JSON.stringify({ message: trimmed }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         setError(data.error ?? "The assistant is unavailable right now.");
+        // The turn was never stored, so drop the question from the transcript
+        // rather than leaving it sitting there unanswered after a reload.
+        setMessages(messages);
         return;
       }
 
       setMessages([...next, { role: "assistant", content: data.reply }]);
     } catch {
       setError("Couldn't reach the assistant. Check your connection.");
+      setMessages(messages);
     } finally {
       setIsThinking(false);
     }

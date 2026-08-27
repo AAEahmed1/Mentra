@@ -28,9 +28,37 @@ model User {
   tasks         Task[]
   notes         Note[]
   memories      Memory[]
+  messages      Message[]
 
   @@unique([email])
   @@map("user")
+}
+
+enum MessageRole {
+  user
+  assistant
+}
+
+/// One line of the ongoing conversation with the assistant.
+///
+/// Separate from Memory on purpose: memory is what Mentra has *learned* and
+/// carries into every turn, this is only what was said. Losing a transcript
+/// costs a student their place in a conversation; losing memory would cost them
+/// everything the assistant knows about them.
+model Message {
+  id        String      @id @default(cuid())
+  /// Total order within a student's conversation. Two rows written in the same
+  /// call can share a createdAt to the millisecond, which would let an answer
+  /// sort above its own question.
+  seq       Int         @default(autoincrement())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      MessageRole
+  content   String
+  createdAt DateTime    @default(now())
+
+  @@index([userId, seq])
+  @@map("message")
 }
 
 enum MemoryType {

@@ -7,6 +7,7 @@ import { createCourse } from "@/lib/services/course";
 import { createTask } from "@/lib/services/task";
 import { createNote } from "@/lib/services/note";
 import { createMemory } from "@/lib/services/memory";
+import { appendMessages } from "@/lib/services/message";
 import { deleteAccount } from "@/lib/services/account";
 
 let userId: string;
@@ -55,6 +56,11 @@ async function seedFullAccount(label: string): Promise<string> {
     body: "A /24 gives 254 usable hosts.",
     courseId: course.data.id,
   });
+
+  await appendMessages(user.id, [
+    { role: "user", content: "What should I do tonight?" },
+    { role: "assistant", content: "Finish lab." },
+  ]);
 
   await createMemory(user.id, {
     content: "Student struggles with subnetting.",
@@ -113,11 +119,20 @@ describe("deleteAccount", () => {
   test("leaves no orphaned rows in any table referencing the user", async () => {
     await deleteAccount(userId);
 
-    const [notes, tasks, memories, courses, semesters, sessions, accounts] =
-      await Promise.all([
+    const [
+      notes,
+      tasks,
+      memories,
+      messages,
+      courses,
+      semesters,
+      sessions,
+      accounts,
+    ] = await Promise.all([
         prisma.note.count({ where: { userId } }),
         prisma.task.count({ where: { userId } }),
         prisma.memory.count({ where: { userId } }),
+        prisma.message.count({ where: { userId } }),
         prisma.course.count({ where: { semester: { userId } } }),
         prisma.semester.count({ where: { userId } }),
         prisma.session.count({ where: { userId } }),
@@ -128,6 +143,7 @@ describe("deleteAccount", () => {
       notes,
       tasks,
       memories,
+      messages,
       courses,
       semesters,
       sessions,
@@ -136,6 +152,7 @@ describe("deleteAccount", () => {
       notes: 0,
       tasks: 0,
       memories: 0,
+      messages: 0,
       courses: 0,
       semesters: 0,
       sessions: 0,

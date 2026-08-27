@@ -9,8 +9,8 @@ import { prisma } from "@/lib/prisma";
  * Semester -> Course. Courses must go before semesters or Postgres rejects the
  * delete with a `course_semesterId_fkey` violation.
  *
- * Session and Account rows are `onDelete: Cascade`, so deleting the user
- * removes them; everything else is deleted explicitly here.
+ * Session, Account and Message rows are `onDelete: Cascade`, so deleting the
+ * user removes them; everything else is deleted explicitly here.
  *
  * Wrapped in a transaction so a failure part-way leaves the account intact
  * rather than half-deleted.

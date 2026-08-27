@@ -13,8 +13,10 @@ What "Ask Mentra" can and cannot do, and the limits it runs under.
 | --- | --- |
 | Tool schemas and validation | `src/lib/ai/tools.ts` |
 | Tool execution against the services | `src/lib/ai/execute.ts` |
-| System prompt and the OpenAI client | `src/lib/ai/openai.ts` |
+| System prompt, rebuilt each turn | `src/lib/ai/system-prompt.ts` |
+| The OpenAI client | `src/lib/ai/openai.ts` |
 | The turn loop (tool rounds, recovery) | `src/lib/ai/chat.ts` |
+| Stored conversation | `src/lib/services/message.ts` |
 | HTTP entry point and session binding | `src/app/api/assistant/route.ts` |
 | The panel itself | `src/components/assistant/assistant-panel.tsx` |
 
@@ -33,7 +35,9 @@ Thirteen tools, six read and seven write.
 - **`search_notes`** — notes by keyword across title and body, or, given a
   `taskId`, exactly the notes attached to one piece of work. Every result
   carries its `taskId` and `courseName`.
-- **`search_memory`** — everything Mentra has stored about this student.
+- **`search_memory`** — everything Mentra has stored about this student. Rarely
+  needed now that memories ride in the prompt; the model is told to reach for it
+  only when that list says it was truncated.
 - **`list_semesters`** — the student's terms, with ids and dates.
 
 ## What it can write
@@ -78,14 +82,16 @@ changing or removing anything that already exists.
 
 - **Five tool rounds per turn** (`MAX_TOOL_ROUNDS` in `chat.ts`). Past that it
   answers with whatever it has rather than looping up cost.
-- **Twenty messages of history**, each capped at 4000 characters.
-- **No chat persistence.** The panel holds its transcript in React state inside
-  the root layout, so it survives navigation between pages and is lost on
-  reload. Memory persists; the conversation does not.
-- **`search_memory` returns everything**, unfiltered and unranked. Fine at
-  today's volume, and something to revisit as memories accumulate.
-- **Memory recall is opt-in per turn.** The prompt instructs the model to check
-  before answering anything personal, but nothing in the code forces the call.
+- **Forty messages of history** (`MAX_STORED_HISTORY`), read from the database
+  rather than sent by the browser. A single message is capped at 4000
+  characters. Older lines stay in the table; this is the window the assistant is
+  given, not a retention policy.
+- **The conversation is stored per student**, so it survives a reload and
+  follows them between devices. One running thread, not separate conversations —
+  there is no way to start a fresh one or clear it from the UI yet.
+- **Forty memories are injected per turn** (`MAX_INJECTED_MEMORIES`), newest
+  first. Past that the prompt says how many were left out and points the model at
+  `search_memory`, which still returns everything unfiltered.
 - **`reasoning_effort: "none"`.** Ranking is decided by `rankTasks`, so the model
   routes and phrases rather than deduces. Revisit this before reaching for a
   larger model if multi-step requests start failing.
@@ -94,11 +100,17 @@ changing or removing anything that already exists.
   piece of work it skipped the id lookup, wrote the context into the note body,
   and reported success anyway.
 
-## Known fragility
+## What varies per turn
 
-**The current date does not come from Mentra.** Nothing in `SYSTEM_PROMPT` or
-the route supplies it, so "due Friday" resolves against whatever date the model
-believes it is. Verified working on 27 August 2026 — it named the date and the
-coming Friday correctly — but that is the provider's behaviour, not ours, and it
-is not something we control or test. Passing the date explicitly in the system
-prompt would make it ours.
+The system prompt is not a constant. `buildSystemPrompt` rebuilds it for every
+request from two things the model must not be left to work out for itself:
+
+- **Today's date**, as a weekday and a `YYYY-MM-DD` date, read in UTC — the same
+  basis `getEffectiveStatus` and the ranking count calendar days on. The route
+  takes one `now` and passes it to both the prompt and `executeToolCall`, so the
+  date the assistant reasons from and the date the ranking scores against cannot
+  land either side of midnight.
+- **What Mentra remembers**, written straight into the prompt rather than left
+  behind a tool call the model might not think to make. When there are no
+  memories the prompt says so plainly, so the model doesn't read silence as
+  having forgotten something.
