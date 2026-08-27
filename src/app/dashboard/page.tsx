@@ -12,6 +12,8 @@ import { rankTasks, type RankedTask } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
 import { TermScore } from "@/components/term-score";
 import { DurationBar } from "@/components/duration-bar";
+import { TimeAvailable } from "@/components/time-available";
+import { parseAvailableMinutes } from "@/lib/available-minutes";
 
 export const metadata: Metadata = {
   title: "Today — Mentra",
@@ -75,9 +77,14 @@ function Countdown({ entry }: { entry: RankedTask }) {
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: PageProps<"/dashboard">) {
   const userId = await requireUserId();
   const now = new Date();
+
+  const { minutes } = await searchParams;
+  const availableMinutes = parseAvailableMinutes(minutes);
 
   const [user, tasks, courses, notes] = await Promise.all([
     prisma.user.findUnique({
@@ -101,7 +108,7 @@ export default async function DashboardPage() {
       );
     }
   }
-  const ranked = rankTasks(tasks, { now });
+  const ranked = rankTasks(tasks, { now, availableMinutes });
   const [struck, ...rest] = ranked;
   const lanes = rest.slice(0, LANE_LIMIT);
 
@@ -153,6 +160,11 @@ export default async function DashboardPage() {
               aria-hidden="true"
               className="animate-now-rule h-px flex-1 bg-now"
             />
+            {/*
+              Sits on the Now rule because it changes what Now is: the ranking
+              below is the answer to "in the time I have", not just "next".
+            */}
+            <TimeAvailable selected={availableMinutes} />
           </div>
 
           {/* The struck item: pulled forward off the lane it sits on. */}
