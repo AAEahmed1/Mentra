@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 /**
  * A filed row — one record in a list, in its resting state.
  *
+ * Set the way a table is set: banded stock behind alternating rows, a hairline
+ * between them and a heavy rule closing the last one. The band bleeds 8px past
+ * the measure on both sides so the text still lines up with the headings above
+ * it while the stock reads as continuous.
+ *
  * `align` is "start" where the content runs to several lines (a note's body,
  * a memory's sentence) so the actions stay level with the title rather than
  * floating to the middle of the block.
@@ -22,7 +27,7 @@ export function FiledRow({
   return (
     <li
       className={cn(
-        "group flex flex-wrap justify-between gap-x-4 gap-y-2 border-b border-rule py-3.5 last:border-b-0",
+        "group -mx-2 flex flex-wrap justify-between gap-x-4 gap-y-2 border-b border-rule px-2 py-3.5 even:bg-band last:border-b-2 last:border-rule-strong",
         align === "start" ? "items-start" : "items-center"
       )}
     >
@@ -37,7 +42,11 @@ export function FiledRow({
 
 /** The same row, opened for editing — the form supplies its own layout. */
 export function FiledRowEditing({ children }: { children: ReactNode }) {
-  return <li className="border-b border-rule py-4 last:border-b-0">{children}</li>;
+  return (
+    <li className="-mx-2 border-b border-rule px-2 py-4 even:bg-band last:border-b-2 last:border-rule-strong">
+      {children}
+    </li>
+  );
 }
 
 /** The metadata line under a row's title. */
@@ -56,7 +65,7 @@ export function FormErrors({ errors }: { errors: string[] }) {
   return (
     <div
       role="alert"
-      className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+      className="rounded-xs border border-destructive/45 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {errors.map((error) => (
         <p key={error}>{error}</p>

@@ -64,7 +64,7 @@ export function AssistantThread({ variant }: { variant: "panel" | "page" }) {
                   key={prompt}
                   type="button"
                   onClick={() => submit(prompt)}
-                  className="rounded-md border border-border px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="rounded-xs border border-rule-strong px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {prompt}
                 </button>
@@ -91,13 +91,13 @@ export function AssistantThread({ variant }: { variant: "panel" | "page" }) {
                     : "animate-turn flex flex-col gap-1"
                 }
               >
-                <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+                <span className="text-[0.6875rem] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
                   {message.role === "user" ? "You" : "Mentra"}
                 </span>
                 <p
                   className={
                     message.role === "user"
-                      ? "max-w-[85%] rounded-md bg-muted px-3 py-2 text-sm whitespace-pre-wrap"
+                      ? "max-w-[85%] rounded-xs bg-muted px-3 py-2 text-sm whitespace-pre-wrap"
                       : "text-sm whitespace-pre-wrap"
                   }
                 >
@@ -117,7 +117,7 @@ export function AssistantThread({ variant }: { variant: "panel" | "page" }) {
         {error && (
           <div
             role="alert"
-            className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="mt-4 rounded-xs border border-destructive/45 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
             {error}
           </div>
@@ -131,8 +131,8 @@ export function AssistantThread({ variant }: { variant: "panel" | "page" }) {
         }}
         className={
           isPanel
-            ? "flex items-center gap-2 border-t border-border px-5 py-4"
-            : "flex max-w-[70ch] items-center gap-2 border-t border-rule pt-4"
+            ? "flex items-center gap-2 border-t-2 border-rule-strong px-5 py-4"
+            : "flex max-w-[70ch] items-center gap-2 border-t-2 border-rule-strong pt-4"
         }
       >
         <label htmlFor={`assistant-input-${variant}`} className="sr-only">

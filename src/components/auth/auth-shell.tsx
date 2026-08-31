@@ -3,8 +3,12 @@ import type { ReactNode } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
- * The way in. A single ruled column on the open page — the same margin-and-line
- * language as the app, before there is a term to draw.
+ * The way in — the edition's title page.
+ *
+ * The wordmark over the same 2px rule the app's masthead carries, then the
+ * heading set in the display slab, then the form. Same stock, same plates,
+ * same rules as everything behind the sign-in; there is simply no term to
+ * print yet.
  */
 export function AuthShell({
   title,
@@ -22,13 +26,18 @@ export function AuthShell({
       </div>
 
       <div className="w-full max-w-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold tracking-tight">Mentra</span>
-          <span aria-hidden="true" className="h-px flex-1 bg-rule" />
+        <div className="flex items-baseline gap-3">
+          <span className="font-display text-lg font-semibold tracking-[-0.01em]">
+            Mentra
+          </span>
+          <span
+            aria-hidden="true"
+            className="rule-pair animate-rule-draw self-center"
+          />
         </div>
 
-        <div className="mt-10 border-l border-primary pl-5">
-          <h1 className="text-2xl leading-tight font-semibold tracking-tight text-balance">
+        <div className="mt-9">
+          <h1 className="font-display text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.02em] text-balance">
             {title}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">{description}</p>

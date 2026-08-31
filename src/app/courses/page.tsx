@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { requireUserId } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
+import { RunningHead } from "@/components/running-head";
 import { listSemestersForUser } from "@/lib/services/semester";
 import { listCoursesForSemester } from "@/lib/services/course";
 import { CreateSemesterForm } from "@/components/courses/create-semester-form";
@@ -37,9 +38,9 @@ export default async function CoursesPage() {
     >
       {semestersWithCourses.map(({ semester, courses }) => (
         <section key={semester.id} className="flex flex-col gap-4">
-          <div className="group/term flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-rule pb-3">
+          <div className="group/term flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b-2 border-rule-strong pb-3">
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold tracking-tight">
+              <h2 className="font-display text-xl font-semibold tracking-[-0.015em]">
                 {semester.name}
               </h2>
               <p data-figures className="mt-0.5 text-xs text-muted-foreground">
@@ -69,16 +70,8 @@ export default async function CoursesPage() {
         </p>
       )}
 
-      <section
-        className={
-          semestersWithCourses.length > 0
-            ? "flex flex-col gap-4 border-t border-rule pt-6"
-            : "flex flex-col gap-4"
-        }
-      >
-        <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-          Add a term
-        </h2>
+      <section className="flex flex-col gap-4">
+        <RunningHead>Add a term</RunningHead>
         <CreateSemesterForm />
       </section>
     </AppShell>

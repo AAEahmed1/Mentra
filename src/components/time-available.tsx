@@ -23,7 +23,10 @@ export function TimeAvailable({ selected }: { selected: number | undefined }) {
   ];
 
   return (
-    <nav aria-label="Time available" className="flex items-center gap-1">
+    <nav
+      aria-label="Time available"
+      className="flex shrink-0 items-center border border-rule-strong"
+    >
       {options.map((option) => {
         const active = option.minutes === selected;
 
@@ -36,8 +39,8 @@ export function TimeAvailable({ selected }: { selected: number | undefined }) {
             aria-current={active ? "true" : undefined}
             className={
               active
-                ? "rounded-md bg-muted px-2 py-1 text-xs font-medium text-foreground"
-                : "rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                ? "bg-plate-now px-2 py-1 text-xs font-semibold text-plate-now-ink not-first:border-l not-first:border-rule-strong"
+                : "px-2 py-1 text-xs text-muted-foreground transition-colors not-first:border-l not-first:border-rule-strong hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             }
           >
             {option.text}

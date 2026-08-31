@@ -136,7 +136,7 @@ export function TaskRow({
                 joining the hover-revealed actions — but it has to look like
                 something you can press.
               */}
-              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 select-none rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 select-none rounded-xs border border-rule-strong px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
                 <svg
                   viewBox="0 0 12 12"
                   fill="none"

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { requireUserId } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
+import { RunningHead } from "@/components/running-head";
 import { listMemoriesForUser } from "@/lib/services/memory";
 import { CreateMemoryForm } from "@/components/privacy/create-memory-form";
 import { MemoryRow } from "@/components/privacy/memory-row";
@@ -21,11 +22,14 @@ export default async function PrivacyPage() {
       lede="Everything it has learned about you, in plain language. Forget anything that's wrong."
     >
       {memories.length > 0 ? (
-        <ul className="flex flex-col">
-          {memories.map((memory) => (
-            <MemoryRow key={memory.id} memory={memory} />
-          ))}
-        </ul>
+        <section className="flex flex-col gap-4">
+          <RunningHead>Recorded</RunningHead>
+          <ul className="flex flex-col">
+            {memories.map((memory) => (
+              <MemoryRow key={memory.id} memory={memory} />
+            ))}
+          </ul>
+        </section>
       ) : (
         <p className="max-w-[60ch] text-sm text-muted-foreground">
           Nothing yet. As you work with the assistant it records what it picks
@@ -33,12 +37,10 @@ export default async function PrivacyPage() {
         </p>
       )}
 
-      <section className="flex flex-col gap-4 border-t border-rule pt-6">
+      <section className="flex flex-col gap-4">
         <div>
-          <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-            Add a memory
-          </h2>
-          <p className="mt-2 max-w-[60ch] text-sm text-muted-foreground">
+          <RunningHead>Add a memory</RunningHead>
+          <p className="mt-3 max-w-[60ch] text-sm text-muted-foreground">
             The assistant writes these itself. You can add one by hand to see
             how it reads.
           </p>
@@ -48,14 +50,11 @@ export default async function PrivacyPage() {
 
       <section
         aria-labelledby="danger-heading"
-        className="flex flex-col gap-4 border-t border-rule pt-6"
+        className="flex flex-col gap-4"
       >
-        <h2
-          id="danger-heading"
-          className="text-xs font-medium tracking-widest text-destructive uppercase"
-        >
+        <RunningHead id="danger-heading" tone="danger">
           Delete account
-        </h2>
+        </RunningHead>
         <DeleteAccountForm />
       </section>
     </AppShell>

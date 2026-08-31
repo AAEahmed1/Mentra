@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { requireUserId } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
+import { RunningHead } from "@/components/running-head";
 import { searchNotesForUser } from "@/lib/services/note";
 import { listCoursesForUser } from "@/lib/services/course";
 import { listTasksForUser } from "@/lib/services/task";
@@ -71,24 +72,27 @@ export default async function NotesPage({
       }
     >
       {notes.length > 0 ? (
-        <ul className="flex flex-col">
-          {notes.map((note) => (
-            <NoteRow
-              key={note.id}
-              note={note}
-              courseName={
-                note.courseId
-                  ? (courseNameById.get(note.courseId) ?? null)
-                  : null
-              }
-              workTitle={
-                note.taskId ? (workTitleById.get(note.taskId) ?? null) : null
-              }
-              courses={courseOptions}
-              work={work}
-            />
-          ))}
-        </ul>
+        <section className="flex flex-col gap-4">
+          <RunningHead>{query ? "Matching notes" : "Filed notes"}</RunningHead>
+          <ul className="flex flex-col">
+            {notes.map((note) => (
+              <NoteRow
+                key={note.id}
+                note={note}
+                courseName={
+                  note.courseId
+                    ? (courseNameById.get(note.courseId) ?? null)
+                    : null
+                }
+                workTitle={
+                  note.taskId ? (workTitleById.get(note.taskId) ?? null) : null
+                }
+                courses={courseOptions}
+                work={work}
+              />
+            ))}
+          </ul>
+        </section>
       ) : (
         query && (
           <p className="text-sm text-muted-foreground">
@@ -97,10 +101,8 @@ export default async function NotesPage({
         )
       )}
 
-      <section className="flex flex-col gap-4 border-t border-rule pt-6">
-        <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-          Add a note
-        </h2>
+      <section className="flex flex-col gap-4">
+        <RunningHead>Add a note</RunningHead>
         <CreateNoteForm courses={courseOptions} work={work} />
       </section>
     </AppShell>

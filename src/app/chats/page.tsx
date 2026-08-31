@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { listConversationsForUser } from "@/lib/services/conversation";
 import { startConversationAction } from "@/lib/actions/conversation";
 import { Button } from "@/components/ui/button";
+import { RunningHead } from "@/components/running-head";
 
 export const metadata: Metadata = {
   title: "Chats — Mentra",
@@ -39,29 +40,53 @@ export default async function ChatsPage() {
       }
     >
       {conversations.length > 0 ? (
-        <ul className="flex flex-col">
-          {conversations.map((conversation) => (
-            <li key={conversation.id} className="border-b border-rule">
-              <Link
-                href={`/chats/${conversation.id}`}
-                className="flex items-baseline justify-between gap-4 py-3 transition-colors hover:bg-muted/50"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">
-                    {conversation.title ?? "Untitled chat"}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {conversation.messageCount}{" "}
-                    {conversation.messageCount === 1 ? "message" : "messages"}
-                  </span>
-                </span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {when(conversation.updatedAt, now)}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <section className="flex flex-col gap-4">
+          <RunningHead>Filed conversations</RunningHead>
+          {/* Fixed columns, same as every other table in the edition: the
+              title carries the link, the figures stay comparable down their
+              own column. */}
+          <table className="almanac-table">
+            <thead>
+              <tr>
+                <th scope="col">
+                  Conversation
+                </th>
+                <th scope="col" className="w-28 text-right">
+                  Messages
+                </th>
+                <th scope="col" className="w-24 text-right">
+                  Updated
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {conversations.map((conversation) => (
+                <tr key={conversation.id} className="hover:bg-muted">
+                  <td className="pr-4 text-sm">
+                    <Link
+                      href={`/chats/${conversation.id}`}
+                      className="block truncate font-medium underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    >
+                      {conversation.title ?? "Untitled chat"}
+                    </Link>
+                  </td>
+                  <td
+                    data-figures
+                    className="text-right text-xs text-muted-foreground"
+                  >
+                    {conversation.messageCount}
+                  </td>
+                  <td
+                    data-figures
+                    className="text-right text-xs text-muted-foreground"
+                  >
+                    {when(conversation.updatedAt, now)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       ) : (
         <p className="text-sm text-muted-foreground">
           Nothing yet. Ask Mentra something from any page and it will turn up

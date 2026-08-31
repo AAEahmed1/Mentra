@@ -9,8 +9,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 /**
- * The margin. In a score the left column names every line and never leaves the
- * page; collapsed, it shows abbreviations rather than disappearing.
+ * The index. An almanac names its tables in a column that never leaves the
+ * page, and the table you are reading is the one that has been inked.
  */
 const SECTIONS = [
   { href: "/dashboard", label: "Today", icon: "today" },
@@ -155,7 +155,7 @@ export function AppSidebar() {
   return (
     <>
       {/* Phone: the margin lifts away, reachable from a bar that stays put. */}
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3 md:hidden">
+      <div className="flex items-center gap-2 border-b-2 border-rule-strong px-4 py-3 md:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -164,7 +164,9 @@ export function AppSidebar() {
         >
           <MarginIcon collapsed />
         </button>
-        <span className="text-sm font-semibold tracking-tight">Mentra</span>
+        <span className="font-display text-base font-semibold tracking-[-0.01em]">
+          Mentra
+        </span>
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
           <SignOutButton />
@@ -190,16 +192,18 @@ export function AppSidebar() {
           collapsed ? "md:w-16" : "md:w-60"
         )}
       >
+        {/* The head of the index carries the same 2px rule the page's masthead
+            does, so the two columns read as one printed sheet. */}
         <div
           className={cn(
-            "flex h-14 shrink-0 items-center border-b border-sidebar-border",
+            "flex h-14 shrink-0 items-center border-b-2 border-rule-strong",
             collapsed ? "md:justify-center md:px-0" : "px-4"
           )}
         >
           <Link
             href="/dashboard"
             className={cn(
-              "text-base font-semibold tracking-tight",
+              "font-display text-lg font-semibold tracking-[-0.01em]",
               collapsed && "md:sr-only"
             )}
           >
@@ -215,32 +219,30 @@ export function AppSidebar() {
           </button>
         </div>
 
-        <ul className="flex flex-1 flex-col gap-0.5 p-2">
+        <ul className="flex flex-1 flex-col divide-y divide-sidebar-border border-b border-sidebar-border">
           {SECTIONS.map((section) => {
             const active = pathname === section.href;
             return (
               <li key={section.href}>
+                {/*
+                  The open section is inked as a solid band running the whole
+                  width of the index — the same move today's entry makes on the
+                  page. A wash tint would have been an accent; this is the plate
+                  owning a region, which is how this world spends colour.
+                */}
                 <Link
                   href={section.href}
                   onClick={() => setMobileOpen(false)}
                   aria-current={active ? "page" : undefined}
                   title={collapsed ? section.label : undefined}
                   className={cn(
-                    "relative flex items-center rounded-md py-2 text-sm transition-colors",
-                    collapsed ? "md:justify-center md:px-0" : "px-3",
+                    "relative flex items-center py-2 text-sm transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                    collapsed ? "md:justify-center md:px-0" : "px-4",
                     active
                       ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  {/* The line the section sits on, struck when it's the open one. */}
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "absolute left-0 h-5 w-0.5 rounded-full transition-colors",
-                      active ? "bg-sidebar-primary" : "bg-transparent"
-                    )}
-                  />
                   <SectionIcon name={section.icon} />
                   <span className={cn("ml-2.5", collapsed && "md:hidden")}>
                     {section.label}
@@ -253,7 +255,7 @@ export function AppSidebar() {
 
         <div
           className={cn(
-            "hidden shrink-0 items-center gap-1 border-t border-sidebar-border p-2 md:flex",
+            "hidden shrink-0 items-center gap-1 border-t-2 border-rule-strong p-2 md:flex",
             collapsed && "md:flex-col"
           )}
         >

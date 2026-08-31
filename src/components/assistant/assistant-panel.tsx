@@ -13,7 +13,7 @@ export function AssistantPanel() {
       <Button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed right-6 bottom-6 z-40 shadow-lg"
+        className="fixed right-6 bottom-6 z-40 shadow-[0_10px_20px_-8px_color-mix(in_oklab,var(--foreground)_55%,transparent)]"
       >
         Ask Mentra
       </Button>
@@ -23,11 +23,13 @@ export function AssistantPanel() {
   return (
     <aside
       aria-label="Mentra assistant"
-      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-border bg-card shadow-2xl"
+      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l-2 border-rule-strong bg-card shadow-[0_0_60px_-12px_color-mix(in_oklab,var(--foreground)_45%,transparent)]"
     >
-      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="min-w-0 border-l border-primary pl-3">
-          <h2 className="text-base leading-snug font-semibold tracking-tight">
+      {/* The panel carries its own masthead: the same heavy rule the page and
+          the index carry, so an overlay still reads as part of the edition. */}
+      <header className="flex items-center justify-between gap-3 border-b-2 border-rule-strong px-5 py-4">
+        <div className="min-w-0">
+          <h2 className="font-display text-base leading-snug font-semibold tracking-[-0.01em]">
             Ask Mentra
           </h2>
           <p className="text-xs text-muted-foreground">

@@ -13,6 +13,8 @@ import { explainRecommendation } from "@/lib/recommendation-reason";
 import { TermScore } from "@/components/term-score";
 import { DurationBar } from "@/components/duration-bar";
 import { TimeAvailable } from "@/components/time-available";
+import { RunningHead } from "@/components/running-head";
+import { StateLamp } from "@/components/state-lamp";
 import { parseAvailableMinutes } from "@/lib/available-minutes";
 
 export const metadata: Metadata = {
@@ -25,7 +27,7 @@ const dayFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-/** How many lines sit under the struck item before the score is cut off. */
+/** How many entries are listed under today's before the table is cut off. */
 const LANE_LIMIT = 6;
 
 function dueLabel(daysUntilDue: number | null): string {
@@ -39,42 +41,20 @@ function dueLabel(daysUntilDue: number | null): string {
   return `${daysUntilDue} days`;
 }
 
-/**
- * The decisive figure, at the scale it deserves. Overdue and due-today are the
- * only states that get colour; everything else is simply ink.
- */
-function Countdown({ entry }: { entry: RankedTask }) {
-  const { daysUntilDue, urgency } = entry.factors;
-  const overdue = urgency === "overdue";
-  const today = daysUntilDue === 0;
-
-  return (
-    <div className="flex shrink-0 flex-col items-end">
-      <span
-        data-figures
-        className={
-          overdue
-            ? "text-4xl leading-none font-semibold tracking-tight text-attention"
-            : today
-              ? "text-4xl leading-none font-semibold tracking-tight text-now"
-              : "text-4xl leading-none font-semibold tracking-tight"
-        }
-      >
-        {daysUntilDue === null ? "—" : Math.abs(daysUntilDue)}
-      </span>
-      <span className="mt-1 text-xs text-muted-foreground">
-        {daysUntilDue === null
-          ? "no date"
-          : overdue
-            ? "days over"
-            : daysUntilDue === 0
-              ? "due today"
-              : daysUntilDue === 1
-                ? "day left"
-                : "days left"}
-      </span>
-    </div>
-  );
+/** The decisive figure and the words for it, as they read on the band. */
+function countdown(entry: RankedTask): { figure: string; word: string } {
+  const { daysUntilDue } = entry.factors;
+  if (daysUntilDue === null) return { figure: "—", word: "no date" };
+  if (daysUntilDue < 0)
+    return {
+      figure: String(Math.abs(daysUntilDue)),
+      word: Math.abs(daysUntilDue) === 1 ? "day over" : "days over",
+    };
+  if (daysUntilDue === 0) return { figure: "0", word: "due today" };
+  return {
+    figure: String(daysUntilDue),
+    word: daysUntilDue === 1 ? "day left" : "days left",
+  };
 }
 
 export default async function DashboardPage({
@@ -98,7 +78,7 @@ export default async function DashboardPage({
 
   const courseById = new Map(courses.map((course) => [course.id, course]));
 
-  // How many notes hang off each piece of work, for the score's hover detail.
+  // How many notes hang off each piece of work, for the table's hover detail.
   const noteCountByTaskId = new Map<string, number>();
   for (const note of notes) {
     if (note.taskId) {
@@ -120,6 +100,9 @@ export default async function DashboardPage({
   const struckCourse = struck?.task.courseId
     ? (courseById.get(struck.task.courseId) ?? null)
     : null;
+
+  const struckOverdue = struck?.factors.urgency === "overdue";
+  const struckFigures = struck ? countdown(struck) : null;
 
   return (
     <AppShell
@@ -147,135 +130,169 @@ export default async function DashboardPage({
         />
       )}
 
-      {struck ? (
-        <section aria-labelledby="now-heading" className="flex flex-col gap-6">
-          <div className="flex items-center gap-3">
-            <h2
-              id="now-heading"
-              className="text-xs font-medium tracking-widest text-muted-foreground uppercase"
-            >
-              Now
-            </h2>
-            <span
-              aria-hidden="true"
-              className="animate-rule-draw h-px flex-1 bg-now"
-            />
-            {/*
-              Sits on the Now rule because it changes what Now is: the ranking
-              below is the answer to "in the time I have", not just "next".
-            */}
-            <TimeAvailable selected={availableMinutes} />
-          </div>
+      {struck && struckFigures ? (
+        <section aria-labelledby="now-heading" className="flex flex-col gap-5">
+          <RunningHead
+            id="now-heading"
+            tone="now"
+            trailing={<TimeAvailable selected={availableMinutes} />}
+          >
+            Now
+          </RunningHead>
 
-          {/* The struck item: pulled forward off the lane it sits on. The
-              left rule is drawn rather than bordered so it can be ruled down
-              the way the lanes are ruled across. */}
-          <article className="animate-struck relative flex flex-col gap-5 pl-5 sm:pl-6">
-            <span
-              aria-hidden="true"
-              className="animate-struck-rule absolute inset-y-0 left-0 w-px bg-now"
-            />
-            <div className="flex items-start justify-between gap-6">
-              <div className="min-w-0">
-                <h3 className="text-4xl leading-[1.1] font-semibold tracking-tight text-balance">
-                  {struck.task.title}
-                </h3>
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  {struckCourse && (
-                    <span className="text-sm text-muted-foreground">
-                      {struckCourse.name}
-                    </span>
-                  )}
-                  <DurationBar minutes={struck.task.estimatedDuration} />
-                </div>
-              </div>
-              <Countdown entry={struck} />
+          {/*
+            Today's entry. The one place in the system where ink owns a whole
+            region rather than marking an edge: a solid band across the measure
+            carrying the state in reversed type, printed in whichever plate the
+            state belongs to — green while it is live, oxblood once it has
+            slipped. The entry itself is set on the open stock beneath it, not
+            in a box: this is a printed notice, not a card.
+          */}
+          <article className="animate-struck">
+            <div
+              className={`animate-band flex items-center justify-between gap-4 px-4 py-2.5 ${
+                struckOverdue
+                  ? "bg-plate-over text-plate-over-ink"
+                  : "bg-plate-now text-plate-now-ink"
+              }`}
+            >
+              <span className="text-[0.6875rem] font-semibold tracking-[0.16em] uppercase">
+                Today&apos;s entry
+              </span>
+              <span className="flex items-baseline gap-2">
+                <span
+                  data-figures
+                  className="font-display text-xl leading-none font-semibold"
+                >
+                  {struckFigures.figure}
+                </span>
+                <span className="text-[0.6875rem] font-semibold tracking-[0.16em] uppercase">
+                  {struckFigures.word}
+                </span>
+              </span>
             </div>
 
-            {/* The marking: why this line, in the score's own margin voice. */}
-            <p className="max-w-[65ch] text-sm italic text-muted-foreground">
-              {explainRecommendation(struck.factors)}
-            </p>
+            <div className="border-b border-rule px-4 pt-5 pb-6">
+              <h3 className="font-display text-[2rem] leading-[1.12] font-semibold tracking-[-0.02em] text-balance sm:text-[2.375rem]">
+                {struck.task.title}
+              </h3>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                {struckCourse && (
+                  <span className="text-sm text-muted-foreground">
+                    {struckCourse.name}
+                  </span>
+                )}
+                <DurationBar minutes={struck.task.estimatedDuration} />
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/tasks"
-                className="rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-              >
-                Open my work
-              </Link>
-              <Link
-                href="/notes"
-                className="rounded-md border border-border px-3.5 py-2 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-              >
-                Write a note
-              </Link>
+              {/* The marking: why this entry, in the edition's margin voice. */}
+              <p className="mt-5 max-w-[65ch] border-l border-rule pl-3 text-sm text-muted-foreground italic">
+                {explainRecommendation(struck.factors)}
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Link
+                  href="/tasks"
+                  className="rounded-xs bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/85 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  Open my work
+                </Link>
+                <Link
+                  href="/notes"
+                  className="rounded-xs border border-rule-strong px-3.5 py-2 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  Write a note
+                </Link>
+              </div>
             </div>
           </article>
 
           {lanes.length > 0 && (
-            <div className="mt-4 flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                  After that
-                </h2>
-                <span
-                  aria-hidden="true"
-                  className="animate-rule-draw h-px flex-1 bg-rule"
-                />
-              </div>
+            <div className="mt-3 flex flex-col gap-4">
+              <RunningHead>After that</RunningHead>
 
-              <ul className="flex flex-col">
-                {lanes.map((entry) => {
-                  const course = entry.task.courseId
-                    ? (courseById.get(entry.task.courseId) ?? null)
-                    : null;
-                  const overdue = entry.factors.urgency === "overdue";
+              {/*
+                Fixed columns that never move, and a lamp column one glyph wide
+                at the head of every line — a row changes state inside its own
+                cells rather than by breaking the grid.
+              */}
+              <table className="almanac-table">
+                <thead>
+                  <tr>
+                    <th scope="col" className="w-6">
+                      <span className="sr-only">State</span>
+                    </th>
+                    <th scope="col">Work</th>
+                    <th scope="col" className="hidden sm:table-cell">
+                      Course
+                    </th>
+                    <th scope="col" className="hidden w-40 sm:table-cell">
+                      Estimate
+                    </th>
+                    <th scope="col" className="w-24 text-right">
+                      Due
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lanes.map((entry) => {
+                    const course = entry.task.courseId
+                      ? (courseById.get(entry.task.courseId) ?? null)
+                      : null;
+                    const overdue = entry.factors.urgency === "overdue";
+                    const today = entry.factors.daysUntilDue === 0;
 
-                  return (
-                    <li
-                      key={entry.task.id}
-                      className="flex flex-col gap-1 border-b border-rule py-3.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-x-4"
-                    >
-                      {/* The title keeps the whole width on a phone rather than
-                          truncating to a fragment; the meta drops beneath it. */}
-                      <span className="text-sm sm:min-w-0 sm:flex-1 sm:truncate">
-                        {entry.task.title}
-                      </span>
-                      <span className="flex items-center gap-x-3 text-xs text-muted-foreground">
-                        {course && (
-                          <span className="hidden shrink-0 sm:block">
-                            {course.name}
+                    return (
+                      <tr key={entry.task.id}>
+                        <td>
+                          <StateLamp
+                            state={
+                              overdue ? "over" : today ? "today" : "on-track"
+                            }
+                          />
+                        </td>
+                        <td className="pr-4 text-sm">
+                          {entry.task.title}
+                          {/* Priority is what put a distant entry above a
+                              nearer one; say so, or the order looks arbitrary. */}
+                          {entry.factors.priority !== "medium" && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {entry.factors.priority} priority
+                            </span>
+                          )}
+                          <span className="mt-0.5 block text-xs text-muted-foreground sm:hidden">
+                            {course?.name}
                           </span>
-                        )}
-                        {/* Priority is what put a distant item above a nearer
-                            one; say so, or the order looks arbitrary. */}
-                        {entry.factors.priority !== "medium" && (
-                          <span className="shrink-0">
-                            {entry.factors.priority} priority
-                          </span>
-                        )}
-                        <DurationBar minutes={entry.task.estimatedDuration} />
-                        <span
+                        </td>
+                        <td className="hidden pr-4 text-xs text-muted-foreground sm:table-cell">
+                          {course?.name}
+                        </td>
+                        <td className="hidden pr-4 sm:table-cell">
+                          <DurationBar minutes={entry.task.estimatedDuration} />
+                        </td>
+                        <td
                           data-figures
                           className={
                             overdue
-                              ? "ml-auto shrink-0 text-sm font-medium text-attention sm:ml-0 sm:w-24 sm:text-right"
-                              : "ml-auto shrink-0 text-sm sm:ml-0 sm:w-24 sm:text-right"
+                              ? "text-right text-sm font-medium text-attention"
+                              : today
+                                ? "text-right text-sm font-medium text-now"
+                                : "text-right text-sm"
                           }
                         >
                           {dueLabel(entry.factors.daysUntilDue)}
-                        </span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
       ) : (
-        <section className="flex flex-col items-start gap-4 border-l border-rule pl-5">
+        <section className="flex flex-col items-start gap-4">
+          <RunningHead>Now</RunningHead>
           <p className="max-w-[55ch] text-sm text-muted-foreground">
             Nothing open. Add your courses and what&apos;s due, and Mentra will
             work out what deserves the next hour.
@@ -283,13 +300,13 @@ export default async function DashboardPage({
           <div className="flex flex-wrap gap-2">
             <Link
               href="/courses"
-              className="rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="rounded-xs bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/85 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               Add a course
             </Link>
             <Link
               href="/tasks"
-              className="rounded-md border border-border px-3.5 py-2 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="rounded-xs border border-rule-strong px-3.5 py-2 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               Add work
             </Link>
