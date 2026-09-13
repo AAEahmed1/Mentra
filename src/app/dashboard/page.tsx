@@ -8,7 +8,7 @@ import { greetingForHour } from "@/lib/greeting";
 import { listTasksForUser } from "@/lib/services/task";
 import { listCoursesForUser } from "@/lib/services/course";
 import { listNotesForUser } from "@/lib/services/note";
-import { rankTasks, type RankedTask } from "@/lib/recommendations";
+import { rankTasks } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
 import { TermScore } from "@/components/term-score";
 import { DurationBar } from "@/components/duration-bar";
@@ -16,6 +16,7 @@ import { TimeAvailable } from "@/components/time-available";
 import { RunningHead } from "@/components/running-head";
 import { StateLamp } from "@/components/state-lamp";
 import { parseAvailableMinutes } from "@/lib/available-minutes";
+import { countdown, dueLabel } from "@/lib/due-label";
 
 export const metadata: Metadata = {
   title: "Today — Mentra",
@@ -29,33 +30,6 @@ const dayFormatter = new Intl.DateTimeFormat("en-US", {
 
 /** How many entries are listed under today's before the table is cut off. */
 const LANE_LIMIT = 6;
-
-function dueLabel(daysUntilDue: number | null): string {
-  if (daysUntilDue === null) return "No deadline";
-  if (daysUntilDue < 0) {
-    const days = Math.abs(daysUntilDue);
-    return `${days} day${days === 1 ? "" : "s"} over`;
-  }
-  if (daysUntilDue === 0) return "Today";
-  if (daysUntilDue === 1) return "Tomorrow";
-  return `${daysUntilDue} days`;
-}
-
-/** The decisive figure and the words for it, as they read on the band. */
-function countdown(entry: RankedTask): { figure: string; word: string } {
-  const { daysUntilDue } = entry.factors;
-  if (daysUntilDue === null) return { figure: "—", word: "no date" };
-  if (daysUntilDue < 0)
-    return {
-      figure: String(Math.abs(daysUntilDue)),
-      word: Math.abs(daysUntilDue) === 1 ? "day over" : "days over",
-    };
-  if (daysUntilDue === 0) return { figure: "0", word: "due today" };
-  return {
-    figure: String(daysUntilDue),
-    word: daysUntilDue === 1 ? "day left" : "days left",
-  };
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -102,7 +76,7 @@ export default async function DashboardPage({
     : null;
 
   const struckOverdue = struck?.factors.urgency === "overdue";
-  const struckFigures = struck ? countdown(struck) : null;
+  const struckFigures = struck ? countdown(struck.factors.daysUntilDue) : null;
 
   return (
     <AppShell

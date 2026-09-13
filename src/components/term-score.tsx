@@ -75,11 +75,14 @@ export function TermScore({
   courseNameById,
   noteCountByTaskId,
   now,
+  heading = "The term",
 }: {
   ranked: RankedTask<LaneTask>[];
   courseNameById: Map<string, string>;
   noteCountByTaskId: Map<string, number>;
   now: Date;
+  /** The running head over the table. The landing page prints an example. */
+  heading?: string;
 }) {
   // Only dated work can sit on the dateline; undated work has no position and
   // is reported in the table beneath rather than invented onto a day.
@@ -108,8 +111,8 @@ export function TermScore({
   const weekTicks = [-7, 0, 7, 14, 21];
 
   return (
-    <section aria-label="The term" className="hidden md:block">
-      <RunningHead>The term</RunningHead>
+    <section aria-label={heading} className="hidden md:block">
+      <RunningHead>{heading}</RunningHead>
 
       <div className="relative mt-5">
         {/* The dateline the whole table is read against. */}
