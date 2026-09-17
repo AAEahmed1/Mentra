@@ -15,7 +15,17 @@ the answer we give when someone asks what the AI is actually capable of, so a
 stale answer is worse than none.
 
 Any change under `src/lib/ai/` — a tool added, removed or reshaped, an edit to
-`SYSTEM_PROMPT`, a change to `MAX_TOOL_ROUNDS`, the history window, the default
-model, or what a tool returns — updates `ASSISTANT.md` in the same commit. The
+the prompt in `system-prompt.ts`, a change to `MAX_TOOL_ROUNDS`, the history
+window, the default model, or what a tool returns — updates `ASSISTANT.md` in
+the same commit. The
 same goes for exposing a service the assistant previously could not reach: the
 "What it cannot do" list is a promise, and it has to stay true.
+
+# Keep the docs in step with the code
+
+`docs/` describes how Mentra works: architecture, data model, domain rules,
+authentication, frontend, configuration, development, deployment, security and
+known issues. A change that makes any of it untrue — a new environment
+variable, route, model, validation rule, script or deployment step — updates
+the relevant page in the same commit. Fixing something listed in
+`docs/known-issues.md` removes it from that list.

@@ -15,8 +15,8 @@ function resolveTestDatabaseUrl(env: Record<string, string>): string {
   if (!testUrl) {
     throw new Error(
       "TEST_DATABASE_URL is not set. The tests write real rows, so they need " +
-        "their own database — see .env.example. Start one locally with " +
-        "`npx prisma dev start mentra`."
+        "their own database. Create one locally with " +
+        "`npx prisma dev --name mentra-test -d` and see docs/development.md."
     );
   }
 
