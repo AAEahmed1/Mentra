@@ -76,11 +76,11 @@ Open http://localhost:3000, create an account, and optionally load the [demo dat
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Next.js development server with Turbopack |
-| `npm run build` | `prisma generate`, then `prisma migrate deploy`, then `next build`. **It migrates whatever database `DIRECT_URL` or `DATABASE_URL` points at.** |
+| `npm run build` | `prisma generate`, then `scripts/migrate-for-build.mjs` (which runs `prisma migrate deploy` except on Vercel previews), then `next build`. **Locally it migrates whatever database `DIRECT_URL` or `DATABASE_URL` points at.** |
 | `npm run start` | Serves a production build |
 | `npm run lint` | ESLint over the project |
-| `npm test` | Vitest, once, against `TEST_DATABASE_URL` |
-| `npm run seed:demo -- --email <address>` | Replaces that account's data with a demo term |
+| `npm test` | Vitest, once; database tests use `TEST_DATABASE_URL` |
+| `npm run seed:demo -- --email <address>` | Replaces that account's data with a demo term (local databases only) |
 | `npx tsc --noEmit` | Type check without building |
 | `npx prisma migrate dev --name <change>` | Create a migration from schema changes (local database only) |
 | `npx prisma studio` | Browse the local database |
@@ -101,19 +101,19 @@ npx vitest                                 # watch mode
 ```
 
 - Tests live beside the code as `*.test.ts` under `src/`.
-- **Every test run needs `TEST_DATABASE_URL`**, even for files that don't touch the database, because `vitest.config.ts` checks it before any test loads. It refuses to run when the variable is unset or equal to `DATABASE_URL`, then points Prisma at the test database.
+- **Database tests need `TEST_DATABASE_URL`.** `vitest.config.ts` points Prisma at it for the run, and refuses to start if it names the same database as `DATABASE_URL`. Without it, unit tests still run: the config warns and points Prisma at an unreachable address, so database tests fail quickly instead of touching your app database.
 - Test files run one at a time (`fileParallelism: false`), because they share the database.
 
 What is covered:
 
 | Area | Kind | Examples |
 | --- | --- | --- |
-| Pure logic in `src/lib/*.test.ts` | Unit | Ranking order and factors, the "why" sentence, overdue rules, due labels, greeting, validation schemas, available minutes, Sentry scrubbing, the landing sample |
+| Pure logic in `src/lib/*.test.ts` | Unit | Ranking order and factors, the "why" sentence, overdue rules, time zones, due labels, greeting, validation schemas (including edit forms that clear fields), available minutes, Sentry scrubbing, the client thread store, the landing sample |
 | Services in `src/lib/services/*.test.ts` | Integration, real database | Ownership refusals across students, cascades and set-null behaviour, account deletion leaving no orphans, message ordering and the 40-message window, profile updates |
 | Row level security (`rls.test.ts`) | Integration | Every table in `public` has RLS enabled |
 | Assistant in `src/lib/ai/*.test.ts` | Unit and integration | Tool schemas never accept `userId`, argument validation, the round limit, tool failures, the system prompt's date and memory sections, tool execution against the database |
 
-Not covered by automated tests: pages and components, server actions, the assistant HTTP route, the OpenAI client and the client-side thread store. Check those by running the app.
+Not covered by automated tests: pages and components, server actions, the assistant HTTP route and the OpenAI client. Check those by running a production build of the app.
 
 ## Demo data
 
@@ -123,7 +123,7 @@ npm run seed:demo -- --email you@example.com
 
 Fills an **existing** account with a nursing student's term: one semester, five courses, eleven pieces of work (overdue, due today, upcoming, undated, in progress, completed), three notes and four memories. Dates are relative to today, so the dashboard always has something in every state. Add `--clear` to remove the data instead.
 
-> **Warning:** it deletes that account's terms, courses, work, notes and memories on every run, in whatever database `DATABASE_URL` points at. Use it only locally or on a throwaway account.
+> **Warning:** every run first deletes that account's terms, courses, work, notes and memories. The script refuses to run unless `DATABASE_URL` is a local database; `--allow-remote` overrides that, loudly. Use it only on a throwaway account.
 
 ## Working on the code
 
@@ -137,6 +137,7 @@ Fills an **existing** account with a nursing student's term: one semester, five 
 | A model change | `prisma/schema.prisma` plus a migration (see below) |
 | Ranking or date rules | `src/lib/recommendations.ts`, `task-status.ts`, `due-label.ts`, with unit tests |
 | An assistant ability | `src/lib/ai/tools.ts` and `execute.ts`, **and `ASSISTANT.md` in the same commit** |
+| A destructive row action | A server action returning `RowActionResult`, run through `useRowAction`, behind `ConfirmAction` |
 
 ### Rules that are enforced or expected
 
@@ -145,7 +146,7 @@ Fills an **existing** account with a nursing student's term: one semester, five 
 - **Keep `ASSISTANT.md` current.** Any change under `src/lib/ai/`, or giving the assistant access to a new service, updates [ASSISTANT.md](../ASSISTANT.md) in the same commit ([AGENTS.md](../AGENTS.md)).
 - **Read the bundled Next.js docs.** This project uses Next.js 16, whose APIs differ from older versions. The docs for the installed version are in `node_modules/next/dist/docs/`.
 - **Follow the design system.** Use the tokens and rules in [DESIGN.md](../DESIGN.md).
-- **Treat dates as UTC calendar days** and pass `now` in from the page. See [domain-logic.md](domain-logic.md#dates-and-labels).
+- **Get the time from `getStudentTime()`** in pages and routes and pass `now` down, instead of calling `new Date()` in helpers or client components. See [domain-logic.md](domain-logic.md#dates-and-time-zones).
 
 ### Adding a migration
 
@@ -179,7 +180,6 @@ These folders are committed but not needed to build or run the app:
 | `.agents/skills/`, `.claude/skills/`, `.windsurf/skills/` | Prisma skills for AI coding agents, managed by `skills-lock.json`. The `.claude` and `.windsurf` entries link to `.agents`. |
 | `.claude/launch.json` | Preview launch configurations for Claude Code (`mentra-dev`, and `mentra-local-prod`, which serves a production build against a local database). |
 | `.impeccable/`, `.hallmark/` | State from the design tools used to build the interface. `DESIGN.md` and `PRODUCT.md` are their context files. |
-| `public/review/` | Old design review screenshots. They are publicly served but not used by the app. |
 | `.scratch/mentra-v0/issues/` | The original v0 tickets, all delivered. Later work has no tickets, and some ticket details are out of date. |
 | `plan.md` | The original product plan and staged roadmap. Its stack table predates some decisions (for example the OpenAI model). |
 | `docs/screenshots/` | Screenshots used by the README and the user guide. |

@@ -122,7 +122,7 @@ Opening `/dashboard`:
 
 1. The root layout (`src/app/layout.tsx`) calls `getSession()`. For a signed-in student it also loads their most recent conversation, so the assistant panel is ready on every page.
 2. The page calls `requireUserId()`, which redirects to `/sign-in` when there is no session.
-3. It loads the student's work, courses and notes through services, and ranks the work with `rankTasks()`, using `?minutes=` if present.
+3. It reads the student's clock with `getStudentTime()`, loads their work, courses and notes through services, and ranks the work with `rankTasks()`, using `?minutes=` if present.
 4. It renders the term table, today's entry and the ranked list as server components. Nothing on the dashboard fetches data on the client.
 
 ### Changing something
@@ -130,9 +130,9 @@ Opening `/dashboard`:
 Adding a piece of work from `/tasks`:
 
 1. `CreateTaskForm` submits to `createTaskAction` through React's `useActionState`.
-2. The action calls `requireUserId()`, then `parseTaskInput()`, which trims text, turns blanks into `undefined` and applies defaults.
+2. The action calls `requireUserId()`, then `parseTaskInput()`, which trims text, checks lengths and numbers, turns blanks into `undefined` and applies defaults.
 3. `createTask()` checks that the chosen course belongs to the student, then inserts the row.
-4. The action calls `revalidatePath("/tasks")` and returns `{ errors: [] }`. The form resets and the page re-renders with the new row.
+4. The action revalidates `/tasks`, `/dashboard` and `/notes`, and returns `{ errors: [] }`. The form resets and the page re-renders with the new row.
 
 ### Asking the assistant
 
@@ -148,8 +148,8 @@ The full flow, the tools and the limits are in [ASSISTANT.md](../ASSISTANT.md).
 
 - **Ownership is enforced in queries, not by trusting ids.** A service never loads a row by id alone; it filters on the student as well, so another student's row looks the same as a missing one. The assistant's tools never accept a `userId`.
 - **Recommendations are deterministic.** The dashboard ranking and its "Recommended because..." sentence are ordinary code (`src/lib/recommendations.ts`), not a model's output. The assistant reads the same ranking through a tool, so it explains rather than decides.
-- **Dates are calendar days in UTC.** "Today", "tomorrow" and "overdue" are computed by comparing UTC calendar dates, so a deadline doesn't flip to overdue part way through its due day. This does mean the day changes at UTC midnight rather than the student's local midnight; see [known-issues.md](known-issues.md).
+- **Dates follow the student's calendar.** The browser reports its time zone in a cookie, and each request converts the current instant into the student's wall-clock time (`getStudentTime()`). "Today", "tomorrow", "overdue" and the greeting then compare whole calendar days, so a deadline doesn't flip to overdue part way through its due day, and the day changes at the student's midnight. See [domain-logic.md](domain-logic.md#dates-and-time-zones).
 - **Row level security closes Supabase's public API.** All tables have RLS enabled with no policies. The app connects as the table owner and is unaffected. See [database.md](database.md#row-level-security).
-- **Migrations run at build time.** `npm run build` runs `prisma migrate deploy` before `next build`. See [deployment.md](deployment.md#migrations-during-the-build).
+- **Migrations run at build time.** `npm run build` applies migrations before `next build`, except on Vercel preview builds. See [deployment.md](deployment.md#migrations-during-the-build).
 - **Privacy in error reports.** Sentry events have request bodies, cookies, headers and most query strings removed before sending. See [security.md](security.md#error-reporting).
 - **Documentation has to stay in step with the assistant.** Any change under `src/lib/ai/` updates [ASSISTANT.md](../ASSISTANT.md) in the same commit, as required by [AGENTS.md](../AGENTS.md).

@@ -46,26 +46,23 @@ The app keeps one database connection per serverless instance in production (`ma
 `npm run build` is:
 
 ```bash
-prisma generate && prisma migrate deploy && next build
+prisma generate && node scripts/migrate-for-build.mjs && next build
 ```
 
-So every Vercel build applies pending migrations to the database named by `DIRECT_URL` (or `DATABASE_URL` if unset), **before** the app is compiled.
+`scripts/migrate-for-build.mjs` runs `prisma migrate deploy` against the database named by `DIRECT_URL` (or `DATABASE_URL`), **before** the app is compiled, on production, local and CI builds. On Vercel preview builds it skips migrating and says why in the build log, unless `MIGRATE_ON_PREVIEW=1` is set.
 
 What this means in practice:
 
-- **Merging a migration deploys it.** There is no separate migration step.
+- **Merging a migration deploys it** with the next production build. There is no separate migration step.
 - **A failed migration fails the deployment**, and the previous deployment keeps serving.
 - **A migration can succeed while the build fails.** The schema is then ahead of the code that is live. Keep migrations backward compatible with the currently deployed code (add columns before using them; remove them only after the code stops using them).
 - **The build needs network access to the database**, which is why pooler URLs are used (Supabase's direct host is IPv6-only).
 
 ## Preview deployments
 
-Preview builds run the same `npm run build`, so **a preview build migrates whatever database its environment variables point at**. If the Preview environment shares the production `DATABASE_URL` and `DIRECT_URL`, a pull request containing a migration changes production before it is merged.
+Preview builds do **not** migrate by default, because Vercel environments often share variables and a preview pointed at the production database would otherwise change production before a pull request is merged. Previews therefore run against whatever schema their database already has; a preview whose code needs a new migration may fail until that migration reaches the database.
 
-Safer options:
-
-- Give the Preview environment its own Supabase project or branch database.
-- Or leave database variables unset for Preview, accepting that previews won't build.
+To let previews migrate, give the Preview environment its own Supabase project or branch database, then set `MIGRATE_ON_PREVIEW=1` on Preview only.
 
 Sign-in on previews: Better Auth trusts `BETTER_AUTH_URL`, the production domain and the deployment's own `VERCEL_URL`, but not branch alias URLs. Google sign-in on a preview only works if that preview URL is registered with the OAuth client.
 
@@ -88,14 +85,10 @@ Sentry is set up through `@sentry/nextjs` when `NEXT_PUBLIC_SENTRY_DSN` is set:
 - **Browser** (`src/instrumentation-client.ts`): captures client errors and navigation transactions.
 - **Error pages**: `error.tsx` and `global-error.tsx` report the error and show its digest as a reference the student can quote.
 - **Tunnel**: browser events are sent through `/monitoring` on the app's own origin, so ad blockers don't drop them.
-- **Scrubbing**: every event passes through `scrubEvent` before sending. See [security.md](security.md#error-reporting).
+- **Scrubbing**: every error passes through `scrubEvent` and every performance transaction through `scrubTransaction` before sending. See [security.md](security.md#error-reporting).
 - **Source maps**: uploaded during the build when `SENTRY_AUTH_TOKEN` is set, then deleted from the build output.
 - `tracesSampleRate` is 1, so every transaction is traced.
-
-Two gaps to be aware of:
-
-- Assistant failures are caught by the route, logged with `console.error("assistant turn failed", ...)` and returned as `502`; they do **not** reach Sentry. Check Vercel's function logs for them.
-- Performance transactions don't pass through `scrubEvent`.
+- **Assistant failures** are caught by the route, returned as `502`, logged with `console.error("assistant turn failed", ...)` and sent to Sentry with `captureException`, tagged `area: assistant`, without the student's message.
 
 ## Resetting the production database
 
@@ -105,7 +98,7 @@ To wipe all accounts and data while keeping the schema, open the Supabase **SQL 
 truncate table
   "user", account, session, verification,
   conversation, message, memory,
-  note, task, course, semester
+  note, task, course, semester, rate_limit
 restart identity cascade;
 ```
 
@@ -118,8 +111,8 @@ Better Auth, not Supabase Auth, manages accounts, so Supabase's **Authentication
 - [ ] `BETTER_AUTH_URL` matches the production origin exactly.
 - [ ] `BETTER_AUTH_SECRET` is unique to production and stored only in Vercel.
 - [ ] `DATABASE_URL` uses the transaction pooler (6543) and `DIRECT_URL` the session pooler (5432).
-- [ ] Preview deployments do not use production database credentials.
+- [ ] Preview deployments do not use production database credentials, or `MIGRATE_ON_PREVIEW` is left unset.
 - [ ] Google OAuth has the production origin and callback URL registered.
-- [ ] `OPENAI_API_KEY` is set if the assistant should work, with a usage limit set in the OpenAI dashboard (the app has no per-student limit).
+- [ ] `OPENAI_API_KEY` is set if the assistant should work, with a spending limit set in the OpenAI dashboard as a backstop to the app's 30-turns-an-hour limit per student.
 - [ ] Sentry DSN and auth token are set if error reporting is wanted.
 - [ ] Supabase backups are enabled for the plan in use.

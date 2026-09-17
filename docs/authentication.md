@@ -6,6 +6,7 @@ Mentra uses [Better Auth](https://www.better-auth.com/) for accounts and session
 - [Sign-up and sign-in flows](#sign-up-and-sign-in-flows)
 - [Reading the session on the server](#reading-the-session-on-the-server)
 - [Protecting pages and actions](#protecting-pages-and-actions)
+- [Rate limiting](#rate-limiting)
 - [Password changes](#password-changes)
 - [Account deletion](#account-deletion)
 - [Google sign-in](#google-sign-in)
@@ -17,18 +18,19 @@ The server configuration is in [`src/lib/auth.ts`](../src/lib/auth.ts):
 
 | Setting | Value |
 | --- | --- |
-| `database` | `prismaAdapter(prisma, { provider: "postgresql" })`, using the `user`, `session`, `account` and `verification` tables |
+| `database` | `prismaAdapter(prisma, { provider: "postgresql" })`, using the `user`, `session`, `account`, `verification` and `rate_limit` tables |
 | `baseURL` | `BETTER_AUTH_URL` |
 | `trustedOrigins` | `BETTER_AUTH_URL`, plus `https://$VERCEL_PROJECT_PRODUCTION_URL` and `https://$VERCEL_URL` when Vercel sets them |
 | `emailAndPassword` | Enabled, no email verification |
 | `socialProviders.google` | Registered only when both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set |
+| `rateLimit` | Enabled and stored in the database (`rate_limit` table), with stricter rules for sign-in, sign-up and password changes |
 | `plugins` | `[nextCookies()]`, which must stay last |
 
 `BETTER_AUTH_SECRET` is read by Better Auth directly and signs session cookies. It must be set in every environment.
 
 All Better Auth endpoints are served by one catch-all route, [`src/app/api/auth/[...all]/route.ts`](../src/app/api/auth/[...all]/route.ts), which exports `GET` and `POST` from `toNextJsHandler(auth)`.
 
-The browser client is [`src/lib/auth-client.ts`](../src/lib/auth-client.ts). It calls `createAuthClient()` with no base URL, so it talks to the current origin, and exports `signIn`, `signUp`, `signOut` and `useSession`.
+The browser client is [`src/lib/auth-client.ts`](../src/lib/auth-client.ts). It calls `createAuthClient()` with no base URL, so it talks to the current origin, and exports `signIn`, `signUp` and `signOut`.
 
 ### Why `nextCookies()` is required
 
@@ -44,12 +46,12 @@ Vercel serves the same deployment from its deployment URL and from any custom do
 | --- | --- | --- |
 | Sign up with email | `src/components/auth/sign-up-form.tsx` calls `signUp.email({ name, email, password })` | `/onboarding` |
 | Sign in with email | `src/components/auth/sign-in-form.tsx` calls `signIn.email({ email, password })`; a failure shows "Incorrect email or password." | `/dashboard` |
-| Google (sign in or sign up) | `src/components/auth/google-sign-in-button.tsx` calls `signIn.social({ provider: "google", callbackURL: "/dashboard" })` | `/dashboard` |
+| Google (sign in or sign up) | `src/components/auth/google-sign-in-button.tsx` calls `signIn.social({ provider: "google", callbackURL: "/dashboard", newUserCallbackURL: "/onboarding" })` | `/onboarding` for a new account, otherwise `/dashboard` |
 | Sign out | `src/components/auth/sign-out-button.tsx` calls `signOut()` | `/sign-in` |
 
 The landing page, `/sign-in` and `/sign-up` redirect signed-in visitors to `/dashboard`.
 
-Onboarding is not enforced. Email sign-up lands on `/onboarding`, but Google sign-up does not, and no page checks whether onboarding was completed. Program and institution can be set later on the Profile page.
+Every new account, email or Google, lands on `/onboarding` once. It is not enforced after that: the step can be skipped, and program and institution can be set later on the Profile page.
 
 ## Reading the session on the server
 
@@ -70,10 +72,23 @@ There is no middleware. Protection is explicit:
 
 - Every signed-in page calls `requireUserId()` near the top.
 - Every exported server action in `src/lib/actions/` calls `requireUserId()` before doing anything.
-- The assistant route calls `requireUserId()` before reading the request.
+- The assistant route calls `getSession()` and answers `401` JSON without a session, because a redirect would be meaningless to its `fetch` caller.
 - Services take the resulting `userId` and scope every query to it (see [database.md](database.md#service-layer)).
 
 When adding a page or action that touches student data, call `requireUserId()` and pass its result to services. Never accept a user id from a form, a URL or the assistant model.
+
+## Rate limiting
+
+Better Auth's rate limiter is enabled with `storage: "database"`, so limits hold across every serverless instance rather than per instance. Counts live in the `rate_limit` table. Limits are per IP address:
+
+| Endpoint | Limit |
+| --- | --- |
+| `/sign-in/email` | 10 requests per 5 minutes |
+| `/sign-up/email` | 5 requests per hour |
+| `/change-password` | 5 requests per 10 minutes |
+| Everything else under `/api/auth` | Better Auth's default (100 requests per 10 seconds) |
+
+The limiter only sees requests that reach `/api/auth`. The Profile page's password form calls Better Auth from a server action, so it is not counted; see [known-issues.md](known-issues.md#security).
 
 ## Password changes
 
@@ -108,4 +123,3 @@ If Google sign-in returns to the wrong domain, `BETTER_AUTH_URL` still names an 
 - Password reset ("forgot password")
 - Changing the email address
 - Linking or unlinking a Google account from the Profile page
-- Custom rate limiting. Better Auth's defaults apply; its default storage is in memory, so limits are per server instance.

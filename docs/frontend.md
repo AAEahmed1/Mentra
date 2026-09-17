@@ -18,7 +18,7 @@ All routes use the App Router under `src/app/`. Pages are server components unle
 | --- | --- | --- |
 | `/` | No | Landing page. Signed-in visitors are redirected to `/dashboard`. |
 | `/sign-in` | No | Email and password form, plus Google when configured. Signed-in visitors go to `/dashboard`. |
-| `/sign-up` | No | Name, email and password, plus Google. Email sign-up continues to `/onboarding`. |
+| `/sign-up` | No | Name, email and password, plus Google. A new account, email or Google, continues to `/onboarding`. |
 | `/onboarding` | Yes | Optional program and institution. Redirects to `/dashboard` once a program is set. Continue and Skip both go to `/courses`. |
 | `/dashboard` | Yes | "Today": greeting, term timeline, time selector, today's entry and the ranked list. Reads `?minutes=`. |
 | `/courses` | Yes | Terms with their courses; add, edit and remove courses; add and delete terms. |
@@ -46,11 +46,12 @@ There are no `loading.tsx` files.
 
 - Loads two fonts with `next/font/google`: **Archivo** for text and figures (`--font-sans`) and **Bitter** at 500, 600 and 700 for display (`--font-display`).
 - Wraps everything in `ThemeProvider` (`next-themes`, `attribute="class"`, default `system`).
+- Mounts `TimeZoneSync`, which reports the browser's time zone to the server in a cookie (see [domain-logic.md](domain-logic.md#dates-and-time-zones)).
 - For a signed-in student, loads the most recent conversation and its last 40 messages and mounts `ThreadSeed` and `AssistantPanel`, so the assistant is available on every page. See [ASSISTANT.md](../ASSISTANT.md).
 
 ### `AppShell` (`src/components/app-shell.tsx`)
 
-The frame of every signed-in page: the sidebar, then a centred `max-w-4xl` column with a masthead (an `h1` in Bitter, an optional lede and actions, and the animated thick-thin rule) followed by the page content.
+The frame of every signed-in page: a **Skip to content** link (visible when focused), the sidebar, then a centred `max-w-4xl` `<main id="main-content">` with a masthead (an `h1` in Bitter, an optional lede and actions, and the thick-thin rule) followed by the page content. The column clips horizontal overflow so the term table can't make the page scroll sideways.
 
 ```tsx
 <AppShell title="Work" lede="Everything due..." actions={<Button>...</Button>}>
@@ -60,9 +61,9 @@ The frame of every signed-in page: the sidebar, then a centred `max-w-4xl` colum
 
 ### `AppSidebar` (`src/components/app-sidebar.tsx`)
 
-- Links: Today, Courses, Work, Notes, Chats, What Mentra knows, Profile, each with a hand-drawn SVG icon. The current page is filled with the green plate and marked `aria-current="page"`. Matching is exact, so `/chats/[id]` does not highlight Chats.
+- Links: Today, Courses, Work, Notes, Chats, What Mentra knows, Profile, each with a hand-drawn SVG icon and an explicit accessible name. The current section is filled with the green plate and marked `aria-current="page"`; nested pages such as `/chats/[id]` keep their section highlighted.
 - On screens 768px and wider the sidebar is sticky and can collapse from 240px to 64px. The choice is stored in `localStorage` under `mentra:margin-collapsed` and read through `useSyncExternalStore`, so the server always renders it expanded and other tabs stay in sync.
-- On phones it becomes a drawer opened from a top bar, over a scrim.
+- On phones it becomes a drawer opened from a sticky top bar, over a scrim. While open it behaves as a dialog: focus moves into it, Tab wraps inside it, Escape closes it and focus returns to the open button, which carries `aria-expanded`. While closed it is hidden from the tab order.
 - The theme toggle and **Sign out** sit at the bottom (or in the phone top bar).
 
 ### Entry pages
@@ -75,7 +76,7 @@ The frame of every signed-in page: the sidebar, then a centred `max-w-4xl` colum
 
 | Folder | Components | Notes |
 | --- | --- | --- |
-| (top level) | `AppShell`, `AppSidebar` (client), `ThemeProvider` (client), `ThemeToggle` (client), `RunningHead`, `StateLamp`, `DurationBar`, `TimeAvailable`, `TermScore`, `filed-row.tsx` helpers | Shared building blocks |
+| (top level) | `AppShell`, `AppSidebar` (client), `ThemeProvider` (client), `ThemeToggle` (client), `TimeZoneSync` (client), `ConfirmAction` (client), `RunningHead`, `StateLamp`, `DurationBar`, `TimeAvailable`, `TermScore`, `filed-row.tsx` helpers | Shared building blocks |
 | `auth/` | `AuthShell`, `SignInForm`, `SignUpForm`, `GoogleSignInButton`, `SignOutButton` | Forms are client components calling the Better Auth client |
 | `onboarding/` | `OnboardingForm` | |
 | `courses/` | `CourseRow`, `CreateCourseForm`, `CreateSemesterForm`, `DeleteCourseButton`, `DeleteSemesterButton` | |
@@ -83,9 +84,9 @@ The frame of every signed-in page: the sidebar, then a centred `max-w-4xl` colum
 | `notes/` | `NoteRow`, `CreateNoteForm` | |
 | `privacy/` | `MemoryRow`, `CreateMemoryForm`, `DeleteAccountForm` | |
 | `profile/` | `ProfileForm`, `ChangePasswordForm` | |
-| `assistant/` | `AssistantPanel`, `AssistantThread`, `ThreadSeed` | See [ASSISTANT.md](../ASSISTANT.md) |
+| `assistant/` | `AssistantPanel`, `AssistantThread`, `ThreadSeed`, `DeleteChatButton` | See [ASSISTANT.md](../ASSISTANT.md) |
 | `landing/` | `LandingPage`, `SampleEdition` | The signed-out landing page and its live example term |
-| `ui/` | `Button`, `Input`, `Label`, `Select`, `Textarea`, `Card` | shadcn primitives; `Card` is currently unused |
+| `ui/` | `Button`, `Input`, `Label`, `Select`, `Textarea` | shadcn primitives |
 
 Shared pieces worth knowing:
 
@@ -94,7 +95,8 @@ Shared pieces worth knowing:
 - **`DurationBar`** draws an estimate as a bar on a 240-minute scale, with the minutes written beside it.
 - **`TimeAvailable`** renders the Any, 15m, 30m, 1h and 90m links that set `?minutes=`.
 - **`TermScore`** is the dashboard timeline: seven days back to 21 days ahead, one row per course with dated work in that window, items sized at 90 minutes per day of width, a green line for today, and a hover or focus card per item. It is hidden below 768px.
-- **`FiledRow`** and friends (`filed-row.tsx`) lay out list rows whose actions appear on hover or keyboard focus on larger screens, plus `FormErrors` and `EditActions`.
+- **`FiledRow`** and friends (`filed-row.tsx`) lay out list rows. On screens 768px and wider with a mouse, actions appear on hover or keyboard focus; on touch devices they stay visible. A row can print an `error` from a row action. `FormErrors` and `EditActions` are the edit form's error box and buttons.
+- **`ConfirmAction`** asks before removing something: the first press turns the button into "Remove for good?" with **Remove** and **Keep**, focus follows the question, and Escape backs out. Its accessible name includes the item, such as "Remove Lab report".
 
 ### Forms
 
@@ -126,7 +128,7 @@ Text-and-line colours ("marks") and fill colours ("plates") are separate tokens,
 
 - A fixed radial "lamp" gradient on `html` and a faint grain texture over the viewport (`body::after`).
 - Overlapping timeline items multiply (`.overprint`) in light mode.
-- Motion is one "impression" sequence: rules draw in (`animate-rule-draw`), timeline blocks land (`animate-block-land`), the today line follows (`animate-now-rule`), and slipped items are struck (`animate-struck`). All use `cubic-bezier(0.16, 1, 0.3, 1)`.
+- Motion is one "impression" sequence on the term table (the dashboard's, and the landing page's example of it): lane rules draw in, timeline blocks land (`animate-block-land`), the today line follows (`animate-now-rule`), and today's entry is struck (`animate-struck`, `animate-band`). Mastheads and running heads do not animate. All use `cubic-bezier(0.16, 1, 0.3, 1)`.
 - `prefers-reduced-motion: reduce` switches the animations off.
 
 ### Structural classes
@@ -145,20 +147,20 @@ What is in place:
 - Visible focus rings throughout.
 - Inputs use 16px text on phones to stop iOS zooming.
 - Reduced motion is respected.
-
-Known gaps are listed in [known-issues.md](known-issues.md#accessibility): no skip link, the phone drawer does not trap focus or close on Escape, row buttons don't name the row they act on, and removing a course, work, note or memory has no confirmation.
+- A skip link, a dialog-like phone drawer, row buttons named after their row, and a confirmation step before anything is removed.
+- The assistant panel closes on Escape and moves focus in and out, but is not a modal; see [known-issues.md](known-issues.md#should-the-assistant-panel-be-a-dialog).
 
 ## Responsive behaviour
 
 | Width | Changes |
 | --- | --- |
 | Under 640px | Secondary table columns fold under the title; the landing page hides its top Sign in link |
-| Under 768px | Sidebar becomes a drawer; the term timeline is hidden; row actions are always visible; extra bottom padding leaves room for the assistant button |
-| 768px and up | Sticky, collapsible sidebar; row actions appear on hover or focus |
+| Under 768px | Sidebar becomes a drawer under a sticky top bar; the term timeline is hidden; row actions are always visible; extra bottom padding leaves room for the assistant button |
+| 768px and up | Sticky, collapsible sidebar; row actions appear on hover or focus when a mouse is present, and stay visible on touch screens |
 
 ## Conventions
 
 - Prefer server components; add `"use client"` only for interactivity.
 - Read data in pages through services; mutate through server actions. Don't call Prisma from components.
 - Use the design tokens (`bg-plate-now`, `text-attention`, `border-rule-strong` and so on) instead of raw colours, and follow the rules in [DESIGN.md](../DESIGN.md): two plates, 1px or 2px rules, no shadows on content, square corners.
-- Pass `now` into date logic from the page instead of creating dates inside helpers, so a page renders one consistent "today".
+- Get the time from `getStudentTime()` in the page and pass `now` into date logic and client components, instead of calling `new Date()` in helpers, so the server render, the browser and the student's calendar agree on "today".

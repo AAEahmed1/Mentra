@@ -8,7 +8,8 @@ Every environment variable Mentra reads, where it is used, and what happens with
 | --- | --- | --- | --- |
 | `DATABASE_URL` | **Yes** | `src/lib/prisma.ts`; `prisma.config.ts` when `DIRECT_URL` is unset | Runtime PostgreSQL connection |
 | `DIRECT_URL` | Production only | `prisma.config.ts` (Prisma CLI and Migrate) | Connection for migrations when it differs from the runtime one |
-| `TEST_DATABASE_URL` | For `npm test` | `vitest.config.ts` | A separate database for the test suite |
+| `TEST_DATABASE_URL` | For database tests | `vitest.config.ts` | A separate database for the test suite |
+| `MIGRATE_ON_PREVIEW` | No | `scripts/migrate-for-build.mjs` | Set to `1` to let Vercel preview builds apply migrations (only when Preview has its own database) |
 | `BETTER_AUTH_SECRET` | **Yes** | Better Auth (read implicitly) | Signs session cookies and tokens |
 | `BETTER_AUTH_URL` | **Yes** | `src/lib/auth.ts` | The app's public origin; base for OAuth callbacks and a trusted origin |
 | `GOOGLE_CLIENT_ID` | No | `src/lib/auth.ts` | Google sign-in, together with the secret |
@@ -40,11 +41,13 @@ Set automatically by the platform:
 - Supabase's direct connection is IPv6-only and unreachable from some networks, so use a pooler.
 - On Vercel each serverless instance opens its own connection; the transaction pooler shares a small number of database connections across them.
 - Prisma Migrate needs session-level advisory locks, which the transaction pooler doesn't provide, hence the separate `DIRECT_URL`.
-- `prisma.config.ts` uses `DIRECT_URL ?? DATABASE_URL`. An **empty** `DIRECT_URL=""` does not fall back, so remove the line instead of blanking it. If `DIRECT_URL` is set, every Prisma CLI command uses it, including migrations you meant to run against another database.
+- `prisma.config.ts` uses `DIRECT_URL` when it is set and not blank, otherwise `DATABASE_URL`. If `DIRECT_URL` is set, every Prisma CLI command uses it, including migrations you meant to run against another database, so leave it out locally.
 
 ### `TEST_DATABASE_URL`
 
-The tests create and delete real rows. `vitest.config.ts` refuses to start when `TEST_DATABASE_URL` is unset or identical to `DATABASE_URL`, then points the Prisma client at it for the run. The check compares the strings exactly, so the same database written two different ways would pass; make sure it really is a different database. See [development.md](development.md#tests).
+The tests create and delete real rows. `vitest.config.ts` points the Prisma client at `TEST_DATABASE_URL` for the run, and refuses to start when it names the same database as `DATABASE_URL`. The comparison uses host (treating `localhost`, `127.0.0.1` and `::1` as one), port, database name and user, ignoring passwords and query parameters.
+
+When `TEST_DATABASE_URL` is not set, unit tests still run: the config prints a warning and points the client at an unreachable address, so every database test fails quickly and none can touch the app's database. See [development.md](development.md#tests).
 
 ### `BETTER_AUTH_SECRET`
 

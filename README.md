@@ -100,10 +100,10 @@ The full walkthrough is in [docs/development.md](docs/development.md).
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Start the development server |
-| `npm run build` | Generate the Prisma client, **apply migrations**, and build for production |
+| `npm run build` | Generate the Prisma client, **apply migrations** (skipped on Vercel previews), and build for production |
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
-| `npm test` | Run the test suite (needs `TEST_DATABASE_URL`) |
+| `npm test` | Run the test suite (database tests need `TEST_DATABASE_URL`) |
 | `npm run seed:demo -- --email <address>` | Replace an account's data with a demo term (local use only) |
 
 ## Configuration
@@ -119,6 +119,7 @@ The full walkthrough is in [docs/development.md](docs/development.md).
 | `OPENAI_API_KEY` | For the assistant | Without it the assistant replies that it isn't configured |
 | `OPENAI_MODEL` | No | Defaults to `gpt-5.6-terra` |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | No | Error reporting and source maps |
+| `MIGRATE_ON_PREVIEW` | No | Set to `1` to let Vercel preview builds migrate their own database |
 
 Details for each are in [docs/configuration.md](docs/configuration.md).
 
@@ -131,7 +132,7 @@ Mentra is built for Vercel with a Supabase database:
 3. Deploy. The build applies database migrations before compiling, including enabling row level security on every table.
 4. For Google sign-in, register `https://<your-domain>/api/auth/callback/google` with your OAuth client.
 
-Because migrations run during the build, make sure preview deployments don't use the production database. See [docs/deployment.md](docs/deployment.md).
+Migrations run during production builds; preview builds skip them unless `MIGRATE_ON_PREVIEW=1` is set for a preview database. See [docs/deployment.md](docs/deployment.md).
 
 ## Project structure
 
@@ -167,7 +168,7 @@ docs/                Documentation and screenshots
 
 ## Privacy
 
-Each student sees only their own data. Every query is scoped to the signed-in account, the assistant cannot be given another student's id, and row level security closes Supabase's public API. Error reports have request bodies, cookies, headers and search text removed. The assistant sends the student's relevant records to OpenAI when it is used. Students can review and forget anything the assistant has learned, and delete their account and all its data. See [docs/security.md](docs/security.md).
+Each student sees only their own data. Every query is scoped to the signed-in account, the assistant cannot be given another student's id, and row level security closes Supabase's public API. Sign-in and the assistant are rate limited, and security headers are sent on every page. Error reports have request bodies, cookies, headers and search text removed. The assistant sends the student's relevant records to OpenAI when it is used. Students can review and forget anything the assistant has learned, and delete their account and all its data. See [docs/security.md](docs/security.md).
 
 ## Not included yet
 

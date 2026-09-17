@@ -20,7 +20,7 @@ What a student can do in Mentra, page by page. The screenshots use the demo term
 Signed-out visitors see the landing page. It explains what Mentra does with a live example term, the rules behind the ranking, what the assistant can and cannot do, and what Mentra stores. Signed-in visitors are sent straight to Today.
 
 1. **Create an account** with a name, email and password (at least 8 characters), or with Google when it is configured.
-2. **Say what you study.** After signing up with email you are asked for your program and institution. Both are optional, and you can skip the step. Signing up with Google goes straight to Today instead.
+2. **Say what you study.** A new account, whether made with email or Google, is asked for a program and institution. Both are optional, and you can skip the step.
 3. **Add a term and its courses** on the Courses page.
 4. **Add your work**: tasks, assignments and exams, with due dates and estimates.
 5. **Open Today** to see what to work on first and why.
@@ -55,7 +55,7 @@ A dark theme is available everywhere:
 
 - **Add a term** with a name and start and end dates. The end must be after the start.
 - **Add a course** to a term with a name and, optionally, a code, professor and credits.
-- **Edit** a course in place, or **Remove** it. Work and notes filed under a removed course are kept, just no longer filed under it.
+- **Edit** a course in place, or **Remove** it after confirming. Work and notes filed under a removed course are kept, just no longer filed under it.
 - **Delete a term** once it has no courses left. Terms cannot be renamed yet.
 
 ## Work
@@ -66,7 +66,7 @@ A dark theme is available everywhere:
 
 - **Add work** with a title, and optionally a description, course, type (task, assignment or exam), due date, priority, estimated minutes and topics to review.
 - Each row shows its course, due date, priority (when not medium), estimate, and either its status or an **Overdue** marker. Overdue is worked out from the due date; you never set it.
-- **Complete** marks open work as done. **Edit** changes any field, including the status (not started, in progress, paused, completed, cancelled). **Remove** deletes it; notes attached to it are kept.
+- **Complete** marks open work as done. **Edit** changes any field, including the status (not started, in progress, paused, completed, cancelled) and how many minutes it actually took; emptying a field, such as the due date or choosing "No course", clears it. **Remove** asks "Remove for good?" before deleting; notes attached to it are kept.
 - **Add a note** opens the notes attached to that piece of work and a quick form to add one.
 
 ## Notes
@@ -77,7 +77,7 @@ A dark theme is available everywhere:
 
 - **Search** matches the title or body, ignoring case.
 - **Add a note** with a title and body, optionally filed under a course and attached to an open piece of work.
-- **Edit** or **Remove** a note from its row.
+- **Edit** or **Remove** (after confirming) a note from its row. A note stays attached to its piece of work even after that work is completed.
 
 ## Ask Mentra
 
@@ -86,6 +86,7 @@ A dark theme is available everywhere:
 The **Ask Mentra** button in the corner of every signed-in page opens the assistant. It reads your courses, work, notes and what it has learned about you before answering, and it can file things for you:
 
 - "What should I do tonight?" or "I only have 45 minutes" gets the same ranking as Today, with the reasons.
+- You can ask up to 30 questions an hour.
 - Mentioning work, a note or something about yourself in passing ("the lab report is due Friday") gets it filed, and the assistant says what it recorded.
 - It can complete, change and delete work and notes, add terms and courses, and remember facts about you.
 - It cannot delete a course, a term or a memory, change your profile or account, see grades, or read other students' data.
@@ -106,7 +107,7 @@ Each conversation with the assistant is a separate thread, saved to your account
 
 `/privacy` shows every memory the assistant has recorded about you, in plain language, with its kind (profile, commitment, learning state or behavioral), whether you told it or it inferred it, and when.
 
-- **Forget** removes a memory immediately.
+- **Forget** removes a memory once you confirm.
 - **Add a memory** by hand to see how memories read.
 - **Delete account** permanently removes your account and everything in it, including terms, courses, work, notes, memories and chats. Type `DELETE` to confirm.
 
@@ -125,5 +126,6 @@ Each conversation with the assistant is a separate thread, saved to your account
 - The sidebar links to Today, Courses, Work, Notes, Chats, What Mentra knows and Profile, with the theme switch and **Sign out** at the bottom. On larger screens it can be collapsed to icons, and the choice is remembered in the browser.
 - The theme follows your system setting until you switch between light and dark.
 - On phones the sidebar becomes a drawer opened from the top bar, and the term timeline is hidden.
+- Dates follow your own time zone, taken from your browser, so "today" and "overdue" change at your midnight.
 
 <img src="screenshots/dashboard-mobile.jpg" alt="Today on a phone" width="320">

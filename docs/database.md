@@ -101,7 +101,7 @@ One chat thread with the assistant. Threads exist because the assistant re-reads
 
 ### `Message` (table `message`)
 
-One line of a transcript: `role`, `content`, `conversationId` (cascade) and `userId` (cascade). `seq` is a database-wide `SERIAL` that gives a strict order. Two rows written in the same call can share a `createdAt` millisecond, so ordering always uses `seq`, which guarantees an answer never sorts above its question. Transcripts are kept separate from memories on purpose: losing a transcript loses a place in a conversation, while losing memory loses what the assistant has learned. Indexed on `(conversationId, seq)`.
+One line of a transcript: `role`, `content`, `conversationId` (cascade) and `userId` (cascade). `seq` is a database-wide `SERIAL` that gives a strict order. Two rows written in the same call can share a `createdAt` millisecond, so ordering always uses `seq`, which guarantees an answer never sorts above its question. Transcripts are kept separate from memories on purpose: losing a transcript loses a place in a conversation, while losing memory loses what the assistant has learned. Indexed on `(conversationId, seq)`, and on `(userId, createdAt)` for the assistant's hourly turn limit.
 
 ### Better Auth tables
 
@@ -110,6 +110,7 @@ These are owned by Better Auth's Prisma adapter. Do not write to them from appli
 - **`Session`** (`session`): `token` (unique), `expiresAt`, `ipAddress`, `userAgent`, `userId` (cascade).
 - **`Account`** (`account`): one row per way of signing in. `providerId` is `credential` for email and password (the scrypt hash is in `password`) or a social provider id such as `google` (with OAuth tokens). Unique on `(issuer, accountId)`. For email and password accounts, `issuer` is `local:credential` and `accountId` is the user id.
 - **`Verification`** (`verification`): short-lived verification values keyed by `identifier`. No foreign keys.
+- **`RateLimit`** (`rate_limit`): Better Auth's rate-limit counters, one row per `key` (endpoint and IP) with `count` and `lastRequest` (milliseconds, `BigInt`). See [authentication.md](authentication.md#rate-limiting).
 
 ## What happens on delete
 
@@ -123,7 +124,7 @@ These are owned by Better Auth's Prisma adapter. Do not write to them from appli
 
 ## Migrations
 
-Migrations live in [`prisma/migrations/`](../prisma/migrations) and are applied in order. `npm run build` runs `prisma migrate deploy`, so every deploy applies pending migrations before the app builds.
+Migrations live in [`prisma/migrations/`](../prisma/migrations) and are applied in order. `npm run build` applies pending migrations before the app builds, on every build except Vercel previews (see [deployment.md](deployment.md#migrations-during-the-build)).
 
 | Migration | Change |
 | --- | --- |
@@ -136,6 +137,8 @@ Migrations live in [`prisma/migrations/`](../prisma/migrations) and are applied 
 | `20260827185110_message` | `MessageRole` and the `message` table, one log per student |
 | `20260827191430_conversation` | Hand-edited data migration: adds `conversation`, backfills one conversation per student who already had messages (titled from their first message), points every message at it, then makes `message.conversationId` required |
 | `20260913040000_enable_row_level_security` | Enables row level security on every table in `public` |
+| `20260917030228_rate_limit` | `rate_limit` table for Better Auth's database-backed rate limiter, with RLS enabled |
+| `20260917040000_message_user_created_index` | Index on `message(userId, createdAt)` for the assistant's turn limit |
 
 Two consequences of the hand-edited conversation migration: backfilled conversations have UUID ids while newer ones have cuids, and a backfilled conversation whose student only had assistant messages has a null title. Both are harmless.
 
@@ -150,7 +153,7 @@ Two consequences of the hand-edited conversation migration: backfilled conversat
 
 Supabase exposes every table in the `public` schema through its Data API (PostgREST), reachable with the project's anon key, which is designed to be public. Without row level security, anyone holding that key could read and write every table, including password hashes and OAuth tokens in `account`, session tokens in `session`, and every student's notes and conversations.
 
-The migration `20260913040000_enable_row_level_security` runs `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` on all twelve tables, including `_prisma_migrations`. It creates **no policies**. With RLS on and no policies, Postgres returns no rows and allows no writes for any role that is not the table owner and lacks `BYPASSRLS`, which on Supabase includes `anon` and `authenticated`. The Data API is therefore closed.
+The migration `20260913040000_enable_row_level_security` runs `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` on all twelve tables that existed then, including `_prisma_migrations`; `rate_limit` enables it in its own migration. It creates **no policies**. With RLS on and no policies, Postgres returns no rows and allows no writes for any role that is not the table owner and lacks `BYPASSRLS`, which on Supabase includes `anon` and `authenticated`. The Data API is therefore closed.
 
 Mentra itself is unaffected. It never uses PostgREST; every query goes through Prisma as the role that owns the tables, and owners bypass RLS unless `FORCE ROW LEVEL SECURITY` is set, which it is not.
 
@@ -184,18 +187,20 @@ All database access from pages, server actions and the assistant goes through th
 - **The caller supplies `userId` from the session.** Services trust it. Pages and actions get it from `requireUserId()`; the assistant route binds it once per request.
 - **Ownership is enforced in the query.** Owned models filter on `userId`; courses filter on `semester: { userId }`. Updates and deletes use `updateMany` or `deleteMany` with `{ id, userId }` and treat a count of zero as `not_found`, so another student's row is indistinguishable from a missing one.
 - **Linked ids are verified.** When a form or tool supplies a `courseId` or `taskId`, the service checks it belongs to the same student before writing.
-- **Results are explicit.** Functions that can fail for expected reasons return `{ success: true, data }` or `{ success: false, error: "<code>" }`. Plain creates and lists return rows directly. Input types come from the zod schemas in `src/lib/*.ts`, which have already trimmed strings and turned blanks into `undefined`.
+- **Results are explicit.** Functions that can fail for expected reasons return `{ success: true, data }` or `{ success: false, error: "<code>" }`. Plain creates and lists return rows directly. Input types come from the zod schemas in `src/lib/*.ts`, which have already trimmed strings and checked lengths.
+- **Updates distinguish "leave" from "clear".** In update types (`TaskUpdate`, `NoteUpdate`, `CourseUpdate`), `undefined` leaves a field as it is and `null` clears an optional one, which is how an edit form unfiles work from a course or empties a due date.
+- **Races report, not throw.** If a row is deleted between a check and a write, the service returns the same `not_found` (or `course_not_found`, `has_courses`) the check would have, instead of letting a Prisma error escape.
 
 | Service | Functions | Notes |
 | --- | --- | --- |
 | `semester.ts` | `createSemester`, `listSemestersForUser` (newest start first), `updateSemester`, `deleteSemester` | Delete returns `has_courses` while courses exist |
 | `course.ts` | `createCourse`, `listCoursesForSemester`, `listCoursesForUser` (by name), `updateCourse`, `deleteCourse` | Create checks the semester belongs to the student |
-| `task.ts` | `createTask`, `listTasksForUser` (newest first), `updateTask`, `completeTask`, `deleteTask` | Create checks the course; new work always starts `not_started`; `completeTask` sets `completed` and optionally `actualDuration` |
+| `task.ts` | `createTask`, `listTasksForUser` (newest first), `updateTask`, `completeTask`, `deleteTask` | Create and update check the course belongs to the student; new work always starts `not_started`; `completeTask` sets `completed` and optionally `actualDuration` |
 | `note.ts` | `createNote`, `listNotesForUser`, `searchNotesForUser`, `updateNote`, `deleteNote` | Checks course and task links on create and update; search is a case-insensitive `contains` on title or body |
-| `memory.ts` | `createMemory`, `listMemoriesForUser` (newest first), `deleteMemory` | No update |
-| `conversation.ts` | `createConversation`, `listConversationsForUser`, `getConversationForUser`, `latestConversationForUser`, `deleteConversation` | The list hides threads with no messages |
-| `message.ts` | `appendMessages`, `listMessagesForConversation` | Appends in one transaction and titles the thread from its first user message; reads return the latest 40 (`MAX_STORED_HISTORY`), oldest first |
-| `profile.ts` | `getProfile`, `updateProfile` | Reports whether the student has a password and which social providers are linked; updates only name, program and institution |
+| `memory.ts` | `createMemory`, `listMemoriesForUser` (newest first), `listRecentMemoriesForUser`, `deleteMemory` | No update; the recent list returns a bounded page plus the total, for the assistant's prompt |
+| `conversation.ts` | `createConversation`, `startConversation`, `listConversationsForUser`, `getConversationForUser`, `latestConversationForUser`, `deleteConversation` | The list hides threads with no messages; `startConversation` reuses an empty thread instead of creating another |
+| `message.ts` | `appendMessages`, `listMessagesForConversation`, `countTurnsSince` | Appends in one transaction and titles the thread from its first user message; reads return the latest 40 (`MAX_STORED_HISTORY`), oldest first; `countTurnsSince` counts a student's recent messages for the turn limit |
+| `profile.ts` | `getProfile`, `updateProfile`, `completeOnboarding` | Reports whether the student has a password and which social providers are linked; updates only name, program and institution |
 | `account.ts` | `deleteAccount` | Deletes notes, tasks, memories, courses, semesters and the user in one transaction; courses go before semesters because of the restrict key |
 
 ## Demo seed script
@@ -207,6 +212,6 @@ npm run seed:demo -- --email you@example.com          # replace that account's d
 npm run seed:demo -- --email you@example.com --clear  # only remove that account's data
 ```
 
-It creates one semester spanning today, five courses, eleven pieces of work (overdue, due today, upcoming, undated, one in progress and one completed), three notes and four memories. Dates are relative to the day it runs. It writes through the same services the app uses. It never creates an account; sign up first.
+It creates one semester spanning today, five courses, eleven pieces of work (overdue, due today, upcoming, undated, one in progress and one completed), three notes and four memories. Dates are relative to the UTC day it runs. It writes through the same services the app uses, runs with `tsx`, and never creates an account; sign up first.
 
-> **Warning:** the script deletes the account's semesters, courses, work, notes and memories on **every** run, with or without `--clear`, in whatever database `DATABASE_URL` points at. It has no production guard. Only run it against a local database or a throwaway demo account.
+> **Warning:** every run first deletes the account's semesters, courses, work, notes and memories (in one transaction), with or without `--clear`, because seeding twice would otherwise duplicate everything. The script refuses to run unless `DATABASE_URL` points at `localhost`, `127.0.0.1` or `::1`; `--allow-remote` overrides that with a loud warning. Only seed a throwaway demo account.

@@ -5,7 +5,7 @@ The rules that decide what Mentra shows: how work is ranked, when it counts as o
 - [The recommendation engine](#the-recommendation-engine)
 - [The "why" sentence](#the-why-sentence)
 - [Status and overdue](#status-and-overdue)
-- [Dates and labels](#dates-and-labels)
+- [Dates and time zones](#dates-and-time-zones)
 - [Validation rules](#validation-rules)
 - [Server actions](#server-actions)
 - [Client helpers](#client-helpers)
@@ -27,7 +27,7 @@ There is no numeric score. Ranking is an ordered comparison:
 
    | Urgency | Rule |
    | --- | --- |
-   | `overdue` | Due date is before today (UTC calendar day) and the task is open |
+   | `overdue` | Due date is before today on the student's calendar (closed work was already removed) |
    | `due_soon` | Due today or within the next 3 days (`DUE_SOON_DAYS = 3`) |
    | `upcoming` | Due in 4 or more days |
    | `someday` | No due date |
@@ -77,17 +77,24 @@ The parts are joined as "a, b and c":
 
 ## Status and overdue
 
-A task's stored status is one of `not_started`, `in_progress`, `paused`, `completed` or `cancelled`. **Overdue is never stored.** [`getEffectiveStatus(status, dueDate, now)`](../src/lib/task-status.ts) returns `"overdue"` for open work whose due date's UTC calendar day is before today's, and the stored status otherwise.
+A task's stored status is one of `not_started`, `in_progress`, `paused`, `completed` or `cancelled`. **Overdue is never stored.** [`getEffectiveStatus(status, dueDate, now)`](../src/lib/task-status.ts) returns `"overdue"` for open work whose due date is before today on the student's calendar, and the stored status otherwise.
 
 - Work due this morning is not overdue at noon.
 - Work due at 23:59 yesterday is overdue at 00:30 today.
 - Completed and cancelled work is never overdue.
 
-## Dates and labels
+## Dates and time zones
 
-**Calendar days, in UTC.** Every "days until due" calculation compares the UTC calendar date of the deadline with the UTC calendar date of now, rounding to whole days. Comparing elapsed hours would make a task due at midnight read "1 day over" by lunchtime on its due day. The downside is that the day boundary is UTC midnight, not the student's own; see [known-issues.md](known-issues.md).
+**Calendar days on the student's calendar.** Due dates are calendar dates, stored as UTC midnight (a form's `2026-09-30` is parsed that way). "Now" is converted once per request into the student's wall-clock time, expressed as a UTC `Date`, and every day calculation compares the UTC calendar fields of both with `calendarDaysUntil(date, now)` in [`task-status.ts`](../src/lib/task-status.ts). Comparing whole days rather than elapsed hours means a task due today stays "due today" all day instead of reading "1 day over" by lunchtime.
 
-Date-only inputs from forms (`2026-09-30`) are parsed as UTC midnight, which fits this model.
+How the student's clock is found:
+
+1. `TimeZoneSync` (`src/components/time-zone-sync.tsx`), mounted in the root layout, reads the browser's IANA time zone and stores it in the `mentra-tz` cookie. When the cookie is new or has changed, it refreshes the page once.
+2. `getStudentTime()` (`src/lib/student-time.ts`) reads the cookie on the server and returns `{ now, timeZone }`, where `now` is `studentClock(new Date(), timeZone)` from [`timezone.ts`](../src/lib/timezone.ts). An unknown or missing zone falls back to UTC.
+3. Pages and the assistant route pass that `now` to ranking, overdue checks, labels and the greeting (`greetingForHour(now.getUTCHours())`), and format it with `timeZone: "UTC"` to show the student's own date.
+4. Real timestamps from the database, such as when a note or memory was written, are formatted with the student's `timeZone` instead.
+
+A clock `Date` is only for comparing and displaying days and hours. Never store it or compare it with database timestamps without converting those through `studentClock` first.
 
 | Function | File | Output |
 | --- | --- | --- |
@@ -97,55 +104,59 @@ Date-only inputs from forms (`2026-09-30`) are parsed as UTC midnight, which fit
 | `toWorkOptions(tasks, courseNames, now)` | `work-options.ts` | The "About a piece of work" picker on the Notes page: open work only, soonest first, labelled like "Clinical Pharmacology · due tomorrow" |
 | `buildSampleTerm(now)` | `landing-sample.ts` | The landing page's example term: five architecture courses and eight pieces of work dated relative to today, ranked with the real engine |
 
-The greeting uses the hour of the server's clock, which is UTC on Vercel.
+The greeting uses the hour on the student's clock.
 
 ## Validation rules
 
 Every form is parsed by a zod schema in `src/lib/`. Each `parseXInput()` function returns either `{ success: true, data }` or `{ success: false, errors: string[] }`, and the form displays the errors.
 
-Unless stated otherwise, text is trimmed and a blank optional field becomes `undefined`, meaning "not given". The profile form is the exception: there a blank field becomes `null`, meaning "clear it".
+Shared helpers live in [`form-values.ts`](../src/lib/form-values.ts). Text is trimmed and length-checked. How a blank field is read depends on the form:
+
+- **Create forms** (`parseTaskInput`, `parseNoteInput`, `parseCourseInput`, ...): a missing or blank optional field becomes `undefined`, meaning "not given".
+- **Edit forms** (`parseTaskUpdate`, `parseNoteUpdate`, `parseCourseUpdate`): a blank field becomes `null`, meaning "clear it", while a field missing from the form stays `undefined` and is left unchanged. This is how choosing "No course" or emptying a due date on an edit form actually clears it.
+- **Profile**: a blank field becomes `null`.
 
 ### Work (`task.ts`)
 
 | Field | Rule |
 | --- | --- |
-| `title` | Required |
-| `description` | Optional |
+| `title` | Required, up to 200 characters |
+| `description` | Optional, up to 2,000 characters |
 | `dueDate` | Optional; must be a valid date |
 | `priority` | `low`, `medium` or `high`; default `medium` |
-| `estimatedDuration` | Optional whole number of minutes, 0 or more |
+| `estimatedDuration` | Optional whole number of minutes, 0 to 10,080 (a week) |
 | `type` | `task`, `assignment` or `exam`; default `task` |
-| `topicsToReview` | Optional |
-| `courseId` | Optional; must be one of the student's courses (checked in the service) |
+| `topicsToReview` | Optional, up to 1,000 characters |
+| `courseId` | Optional; must be one of the student's courses (checked in the service on create and update) |
 
-Status is not part of this schema. It changes through the edit form's status field, the Complete button, or the assistant.
+The edit form (`parseTaskUpdate`) also accepts `status`, which must be one of the five statuses, and `actualDuration`, with the same rule as the estimate. Completing work from its row (`parseTaskCompletion`) accepts an optional `actualDuration`.
 
 ### Semesters (`semester.ts`)
 
-- `name` required.
-- `startDate` and `endDate` required and valid; `endDate` must be strictly after `startDate`.
+- `name` required, up to 120 characters.
+- `startDate` and `endDate` required and valid (a blank or missing field is reported as required); `endDate` must be strictly after `startDate`.
 - A semester with courses cannot be deleted ("Remove its courses before deleting this semester.").
 
 ### Courses (`course.ts`)
 
-- `name` required.
-- `code` and `professor` optional.
-- `credits` optional whole number.
+- `name` required, up to 120 characters.
+- `code` optional, up to 30 characters; `professor` optional, up to 120.
+- `credits` optional whole number from 0 to 999.
 
 ### Notes (`note.ts`)
 
-- `title` and `body` required.
+- `title` required, up to 200 characters; `body` required, up to 20,000.
 - `courseId` and `taskId` optional; both must belong to the student (checked in the service).
 
 ### Memories (`memory.ts`)
 
-- `content` required.
+- `content` required, up to 1,000 characters.
 - `type` required: `profile`, `commitment`, `learning_state` or `behavioral`.
 - `source`: `explicit` or `inferred`; default `explicit` for memories added by hand.
 
 ### Onboarding (`onboarding.ts`)
 
-`program` and `institution`, both optional.
+`program` and `institution`, both optional, up to 120 characters each.
 
 ### Profile (`profile.ts`)
 
@@ -171,12 +182,13 @@ All mutations from the interface go through `"use server"` functions in [`src/li
 
 | File | Actions | Revalidates or redirects |
 | --- | --- | --- |
-| `semester.ts` | `createSemesterAction`, `deleteSemesterAction` | `/courses` |
-| `course.ts` | `createCourseAction`, `updateCourseAction`, `deleteCourseAction` | `/courses` |
-| `task.ts` | `createTaskAction`, `updateTaskAction`, `completeTaskAction`, `deleteTaskAction` | `/tasks` |
+| `semester.ts` | `createSemesterAction`, `deleteSemesterAction` | `/courses`, `/dashboard` |
+| `course.ts` | `createCourseAction`, `updateCourseAction`, `deleteCourseAction` | `/courses`, `/dashboard`, `/tasks`, `/notes` |
+| `task.ts` | `createTaskAction`, `updateTaskAction`, `completeTaskAction`, `deleteTaskAction` | `/tasks`, `/dashboard`, `/notes` |
 | `note.ts` | `createNoteAction`, `updateNoteAction`, `deleteNoteAction` | `/notes`, `/dashboard`, `/tasks` |
-| `memory.ts` | `createMemoryAction`, `deleteMemoryAction`, `deleteAccountAction` | `/privacy`; account deletion redirects to `/sign-in` |
-| `onboarding.ts` | `completeOnboardingAction` | Redirects to `/courses` |
+| `memory.ts` | `createMemoryAction`, `deleteMemoryAction` | `/privacy` |
+| `account.ts` | `deleteAccountAction` | Redirects to `/sign-in` |
+| `onboarding.ts` | `completeOnboardingAction` | Revalidates `/profile`, redirects to `/courses` |
 | `profile.ts` | `updateProfileAction`, `changePasswordAction` | Profile updates revalidate every page, because the name appears in the greeting |
 | `conversation.ts` | `startConversationAction`, `deleteConversationAction` | Redirect to `/chats/[id]` or `/chats` |
 
@@ -185,7 +197,7 @@ Returned state shapes:
 - Most form actions return `{ errors: string[] }`.
 - Profile and password actions return `{ errors: string[], saved: boolean }`, so the form can show "Saved."
 - Semester and account deletion return `{ error: string | null }`.
-- Row buttons (complete, delete, forget) return nothing.
+- Row buttons (complete, remove, forget) return `RowActionResult`, `{ error: string | null }` from [`action-state.ts`](../src/lib/action-state.ts), and the row prints the error when something didn't happen (for example, it was already removed).
 
 Notable behaviour:
 
@@ -197,7 +209,9 @@ Notable behaviour:
 [`use-row-actions.ts`](../src/lib/use-row-actions.ts) provides the hooks the list rows use:
 
 - **`useInlineEdit(action)`** opens and closes a row's edit form, keeping it open with errors when saving fails.
-- **`useRowAction(action)`** runs a one-field action, such as Complete or Remove, in a transition. It ignores errors.
+- **`useRowAction(action)`** runs a one-field action, such as Complete or Remove, in a transition, and keeps the action's `error` for the row to show.
 - **`useQuickForm(action)`** clears a small form after a successful save by remounting it, and keeps the typed text when saving fails.
+
+[`ConfirmAction`](../src/components/confirm-action.tsx) wraps removals: the first press asks "Remove for good?", the second carries it out, and Escape or **Keep** backs out.
 
 [`assistant-thread.ts`](../src/lib/assistant-thread.ts) is the client store shared by the assistant panel and the chat pages; see [ASSISTANT.md](../ASSISTANT.md).
