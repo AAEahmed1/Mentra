@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Semester } from "@/generated/prisma/client";
 import type { SemesterInput } from "@/lib/semester";
+import { isForeignKeyViolation } from "@/lib/services/prisma-errors";
 
 export function createSemester(
   userId: string,
@@ -36,9 +37,12 @@ export async function updateSemester(
     return { success: false, error: "not_found" };
   }
 
-  const semester = await prisma.semester.findUniqueOrThrow({
-    where: { id: semesterId },
+  const semester = await prisma.semester.findFirst({
+    where: { id: semesterId, userId },
   });
+  if (!semester) {
+    return { success: false, error: "not_found" };
+  }
 
   return { success: true, data: semester };
 }
@@ -64,6 +68,15 @@ export async function deleteSemester(
     return { success: false, error: "has_courses" };
   }
 
-  await prisma.semester.delete({ where: { id: semesterId } });
+  try {
+    await prisma.semester.deleteMany({ where: { id: semesterId, userId } });
+  } catch (error) {
+    // A course added in the moment since the count: the database's restrict
+    // key refuses the delete, which is exactly the answer the count gives.
+    if (isForeignKeyViolation(error)) {
+      return { success: false, error: "has_courses" };
+    }
+    throw error;
+  }
   return { success: true };
 }

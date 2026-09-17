@@ -72,3 +72,18 @@ describe("parseSemesterInput", () => {
     });
   });
 });
+
+describe("missing semester dates", () => {
+  test("a date field absent from the form is required, not 1 January 1970", () => {
+    const result = parseSemesterInput({
+      name: "Fall 2026",
+      startDate: null,
+      endDate: "2026-12-15",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      errors: ["Start date is required"],
+    });
+  });
+});

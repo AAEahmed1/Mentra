@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Note } from "@/generated/prisma/client";
 import type { NoteInput } from "@/lib/note";
+import { isForeignKeyViolation } from "@/lib/services/prisma-errors";
 
 export type CreateNoteResult =
   | { success: true; data: Note }
@@ -13,7 +14,7 @@ export type CreateNoteResult =
  */
 async function rejectForeignLinks(
   userId: string,
-  data: Pick<NoteInput, "courseId" | "taskId">
+  data: { courseId?: string | null; taskId?: string | null }
 ): Promise<"course_not_found" | "task_not_found" | null> {
   if (data.courseId) {
     const course = await prisma.course.findFirst({
@@ -41,11 +42,17 @@ export async function createNote(
     return { success: false, error: rejection };
   }
 
-  const note = await prisma.note.create({
-    data: { ...data, userId },
-  });
-
-  return { success: true, data: note };
+  try {
+    const note = await prisma.note.create({
+      data: { ...data, userId },
+    });
+    return { success: true, data: note };
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      return { success: false, error: linkedRowGone(data) };
+    }
+    throw error;
+  }
 }
 
 export function listNotesForUser(userId: string): Promise<Note[]> {
@@ -77,6 +84,25 @@ export function searchNotesForUser(
   });
 }
 
+/**
+ * The fields an update may change. `undefined` leaves a field as it is; `null`
+ * unfiles the note from its course or piece of work.
+ */
+export type NoteUpdate = {
+  title?: string;
+  body?: string;
+  courseId?: string | null;
+  taskId?: string | null;
+};
+
+/** Which link vanished when a write lost a race with a delete. */
+function linkedRowGone(data: {
+  courseId?: string | null;
+  taskId?: string | null;
+}): "course_not_found" | "task_not_found" {
+  return data.courseId ? "course_not_found" : "task_not_found";
+}
+
 export type UpdateNoteResult =
   | { success: true; data: Note }
   | { success: false; error: "not_found" | "course_not_found" | "task_not_found" };
@@ -84,25 +110,34 @@ export type UpdateNoteResult =
 export async function updateNote(
   userId: string,
   noteId: string,
-  data: Partial<NoteInput>
+  data: NoteUpdate
 ): Promise<UpdateNoteResult> {
   const rejection = await rejectForeignLinks(userId, data);
   if (rejection) {
     return { success: false, error: rejection };
   }
 
-  const { count } = await prisma.note.updateMany({
-    where: { id: noteId, userId },
-    data,
-  });
+  let count: number;
+  try {
+    ({ count } = await prisma.note.updateMany({
+      where: { id: noteId, userId },
+      data,
+    }));
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      return { success: false, error: linkedRowGone(data) };
+    }
+    throw error;
+  }
 
   if (count === 0) {
     return { success: false, error: "not_found" };
   }
 
-  const note = await prisma.note.findUniqueOrThrow({
-    where: { id: noteId },
-  });
+  const note = await prisma.note.findFirst({ where: { id: noteId, userId } });
+  if (!note) {
+    return { success: false, error: "not_found" };
+  }
 
   return { success: true, data: note };
 }

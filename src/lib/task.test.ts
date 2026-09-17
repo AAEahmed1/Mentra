@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { parseTaskInput } from "@/lib/task";
+import {
+  parseTaskCompletion,
+  parseTaskInput,
+  parseTaskUpdate,
+} from "@/lib/task";
 
 const baseInput = {
   title: "Network Security Lab",
@@ -91,5 +95,101 @@ describe("parseTaskInput", () => {
     const result = parseTaskInput({ ...baseInput, courseId: "course_123" });
 
     expect(result.success && result.data.courseId).toBe("course_123");
+  });
+});
+
+const editInput = {
+  ...baseInput,
+  status: null,
+  actualDuration: null,
+};
+
+describe("parseTaskUpdate", () => {
+  test("clears optional fields the student emptied", () => {
+    const result = parseTaskUpdate({
+      ...editInput,
+      description: "",
+      dueDate: "",
+      estimatedDuration: " ",
+      actualDuration: "",
+      topicsToReview: "",
+      courseId: "",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        title: "Network Security Lab",
+        description: null,
+        dueDate: null,
+        priority: "medium",
+        estimatedDuration: null,
+        actualDuration: null,
+        type: "task",
+        status: undefined,
+        topicsToReview: null,
+        courseId: null,
+      },
+    });
+  });
+
+  test("leaves fields missing from the form untouched", () => {
+    const result = parseTaskUpdate(editInput);
+
+    expect(result.success && result.data.courseId).toBeUndefined();
+    expect(result.success && result.data.dueDate).toBeUndefined();
+  });
+
+  test("accepts a known status and actual minutes", () => {
+    const result = parseTaskUpdate({
+      ...editInput,
+      status: "in_progress",
+      actualDuration: "95",
+    });
+
+    expect(result.success && result.data.status).toBe("in_progress");
+    expect(result.success && result.data.actualDuration).toBe(95);
+  });
+
+  test("rejects an unknown status instead of passing it to the database", () => {
+    const result = parseTaskUpdate({ ...editInput, status: "archived" });
+
+    expect(result).toEqual({ success: false, errors: ["Pick a valid status"] });
+  });
+});
+
+describe("task limits", () => {
+  test("rejects an overlong title", () => {
+    const result = parseTaskInput({ ...baseInput, title: "a".repeat(201) });
+
+    expect(result).toEqual({
+      success: false,
+      errors: ["Title must be 200 characters or fewer"],
+    });
+  });
+
+  test("rejects fractional and absurd estimates", () => {
+    expect(
+      parseTaskInput({ ...baseInput, estimatedDuration: "12.5" }).success
+    ).toBe(false);
+    expect(
+      parseTaskInput({ ...baseInput, estimatedDuration: "20000" }).success
+    ).toBe(false);
+  });
+});
+
+describe("parseTaskCompletion", () => {
+  test("allows completing without a time", () => {
+    expect(parseTaskCompletion({ actualDuration: null })).toEqual({
+      success: true,
+      data: { actualDuration: undefined },
+    });
+  });
+
+  test("rejects text instead of recording NaN", () => {
+    expect(parseTaskCompletion({ actualDuration: "abc" })).toEqual({
+      success: false,
+      errors: ["Actual time must be a number"],
+    });
   });
 });

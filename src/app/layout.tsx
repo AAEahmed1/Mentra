@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, Bitter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TimeZoneSync } from "@/components/time-zone-sync";
 import { getSession } from "@/lib/session";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
 import { ThreadSeed } from "@/components/assistant/thread-seed";
@@ -72,6 +73,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
         */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <TimeZoneSync />
           {children}
           {session?.user && (
             <>

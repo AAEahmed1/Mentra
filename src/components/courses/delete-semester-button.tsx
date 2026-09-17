@@ -25,7 +25,7 @@ export function DeleteSemesterButton({ semesterId }: { semesterId: string }) {
     */
     <form
       action={formAction}
-      className="flex flex-col items-end gap-1.5 transition-opacity md:opacity-0 md:group-hover/term:opacity-100 md:group-focus-within/term:opacity-100"
+      className="flex flex-col items-end gap-1.5 transition-opacity md:pointer-fine:opacity-0 md:pointer-fine:group-hover/term:opacity-100 md:pointer-fine:group-focus-within/term:opacity-100"
     >
       <input type="hidden" name="semesterId" value={semesterId} />
       <Button type="submit" variant="destructive" size="sm" disabled={isPending}>

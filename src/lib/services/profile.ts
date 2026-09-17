@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { OnboardingInput } from "@/lib/onboarding";
 import type { ProfileInput } from "@/lib/profile";
 
 /** better-auth stores email-and-password sign-ins under this provider id. */
@@ -59,5 +60,19 @@ export async function updateProfile(
       program: input.program,
       institution: input.institution,
     },
+  });
+}
+
+/**
+ * Saves what a student says they study during onboarding. Fields left blank
+ * there are skipped rather than cleared; the profile page is where they clear.
+ */
+export async function completeOnboarding(
+  userId: string,
+  input: OnboardingInput,
+): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: input,
   });
 }

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { QuickNoteForm } from "@/components/tasks/quick-note-form";
+import { ConfirmAction } from "@/components/confirm-action";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -38,21 +39,23 @@ export function TaskRow({
   courseName,
   notes,
   courses,
+  today,
 }: {
   task: Task;
   courseName: string | null;
   notes: Note[];
   courses: CourseOption[];
+  /**
+   * The student's clock from the server (see getStudentTime), passed in rather
+   * than read here so the server render and the browser agree on the day.
+   */
+  today: Date;
 }) {
   const edit = useInlineEdit(updateTaskAction);
   const complete = useRowAction(completeTaskAction);
   const remove = useRowAction(deleteTaskAction);
 
-  const effectiveStatus = getEffectiveStatus(
-    task.status,
-    task.dueDate,
-    new Date()
-  );
+  const effectiveStatus = getEffectiveStatus(task.status, task.dueDate, today);
   const isResolved = task.status === "completed" || task.status === "cancelled";
 
   if (!edit.isEditing) {
@@ -71,6 +74,7 @@ export function TaskRow({
 
     return (
       <FiledRow
+        error={complete.error ?? remove.error}
         actions={
           <>
             {!isResolved && (
@@ -78,24 +82,28 @@ export function TaskRow({
                 type="button"
                 variant="ghost"
                 size="sm"
+                aria-label={`Complete ${task.title}`}
                 onClick={() => complete.run("taskId", task.id)}
                 disabled={complete.isPending}
               >
                 Complete
               </Button>
             )}
-            <Button type="button" variant="ghost" size="sm" onClick={edit.open}>
-              Edit
-            </Button>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => remove.run("taskId", task.id)}
-              disabled={remove.isPending}
+              aria-label={`Edit ${task.title}`}
+              onClick={edit.open}
             >
-              Remove
+              Edit
             </Button>
+            <ConfirmAction
+              label="Remove"
+              itemName={task.title}
+              onConfirm={() => remove.run("taskId", task.id)}
+              isPending={remove.isPending}
+            />
           </>
         }
       >
@@ -112,7 +120,7 @@ export function TaskRow({
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
             {metadata && <RowMeta>{metadata}</RowMeta>}
             {effectiveStatus === "overdue" ? (
-              <span className="whitespace-nowrap rounded-full bg-tab-due px-2 py-0.5 text-xs font-medium text-tab-due-foreground">
+              <span className="whitespace-nowrap rounded-xs bg-plate-over px-2 py-0.5 text-xs font-medium text-plate-over-ink">
                 Overdue
               </span>
             ) : (
@@ -287,6 +295,23 @@ export function TaskRow({
               defaultValue={task.estimatedDuration ?? ""}
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={`edit-actual-${task.id}`}>
+            Actual minutes{" "}
+            <span className="text-muted-foreground">
+              (optional, how long it really took)
+            </span>
+          </Label>
+          <Input
+            id={`edit-actual-${task.id}`}
+            name="actualDuration"
+            type="number"
+            min={0}
+            defaultValue={task.actualDuration ?? ""}
+            className="sm:max-w-40"
+          />
         </div>
 
         <div className="flex flex-col gap-2">

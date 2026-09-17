@@ -1,10 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUserId } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
 import { parseOnboardingInput } from "@/lib/onboarding";
+import { completeOnboarding } from "@/lib/services/profile";
 
 export type OnboardingActionState = {
   errors: string[];
@@ -25,10 +26,9 @@ export async function completeOnboardingAction(
     return { errors: result.errors };
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: result.data,
-  });
+  await completeOnboarding(userId, result.data);
 
+  // The profile page shows these fields; the dashboard does not.
+  revalidatePath("/profile");
   redirect("/courses");
 }

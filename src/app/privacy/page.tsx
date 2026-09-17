@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { requireUserId } from "@/lib/session";
+import { getStudentTime } from "@/lib/student-time";
 import { AppShell } from "@/components/app-shell";
 import { RunningHead } from "@/components/running-head";
 import { listMemoriesForUser } from "@/lib/services/memory";
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 
 export default async function PrivacyPage() {
   const userId = await requireUserId();
+  const { timeZone } = await getStudentTime();
   const memories = await listMemoriesForUser(userId);
 
   return (
@@ -26,7 +28,7 @@ export default async function PrivacyPage() {
           <RunningHead>Recorded</RunningHead>
           <ul className="flex flex-col">
             {memories.map((memory) => (
-              <MemoryRow key={memory.id} memory={memory} />
+              <MemoryRow key={memory.id} memory={memory} timeZone={timeZone} />
             ))}
           </ul>
         </section>

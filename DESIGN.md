@@ -550,7 +550,9 @@ elastic curves are not part of the system.
 
 ### Named Rules
 **The One Impression Rule.** The sequence belongs to the dashboard's term and
-to nothing else. Do not reuse it as a page-load reveal, do not stagger
+to nothing else. The landing page's example term is the same component showing
+the same object, so it prints the same way; mastheads and running heads do not
+animate. Do not reuse it as a page-load reveal, do not stagger
 arbitrary regions, and do not add a second authored moment on another surface.
 
 **The Movement-Means-Something Rule.** Outside the authored sequence, a thing

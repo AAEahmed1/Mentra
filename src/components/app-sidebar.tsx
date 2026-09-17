@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -158,15 +158,57 @@ export function AppSidebar() {
     marginStore.getSnapshot,
     marginStore.getServerSnapshot
   );
+  const navRef = useRef<HTMLElement>(null);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+
+  // The phone drawer behaves as a dialog while it is open: focus moves into
+  // it, stays inside it, and returns to the button that opened it.
+  useEffect(() => {
+    if (mobileOpen) {
+      navRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+    } else if (wasOpen.current) {
+      openButtonRef.current?.focus();
+    }
+    wasOpen.current = mobileOpen;
+  }, [mobileOpen]);
+
+  function handleDrawerKeyDown(event: React.KeyboardEvent<HTMLElement>) {
+    if (!mobileOpen) return;
+
+    if (event.key === "Escape") {
+      setMobileOpen(false);
+      return;
+    }
+
+    if (event.key !== "Tab" || !navRef.current) return;
+    const focusable = Array.from(
+      navRef.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")
+    ).filter((element) => element.offsetParent !== null);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!first || !last) return;
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <>
       {/* Phone: the margin lifts away, reachable from a bar that stays put. */}
-      <div className="flex items-center gap-2 border-b-2 border-rule-strong px-4 py-3 md:hidden">
+      <div className="sticky top-0 z-30 flex items-center gap-2 border-b-2 border-rule-strong bg-background px-4 py-3 md:hidden">
         <button
+          ref={openButtonRef}
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Open sections"
+          aria-expanded={mobileOpen}
+          aria-controls="app-sections"
           className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <MarginIcon collapsed />
@@ -190,12 +232,21 @@ export function AppSidebar() {
       )}
 
       <nav
+        ref={navRef}
+        id="app-sections"
         aria-label="Sections"
         data-collapsed={collapsed ? "" : undefined}
+        onKeyDown={handleDrawerKeyDown}
         className={cn(
           "z-50 flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
-          "fixed inset-y-0 left-0 w-60 transition-transform duration-200 md:sticky md:top-0 md:h-svh md:translate-x-0 md:transition-[width]",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          "fixed inset-y-0 left-0 w-60 duration-200 md:visible md:sticky md:top-0 md:h-svh md:translate-x-0 md:transition-[width]",
+          // Off-screen is not enough on its own: a closed drawer's links would
+          // still be reached by Tab. Hidden, they leave the tab order too.
+          // Visibility only animates on the way out, so the drawer stays seen
+          // while it slides away but is focusable the instant it opens.
+          mobileOpen
+            ? "visible translate-x-0 transition-transform"
+            : "invisible -translate-x-full transition-[transform,visibility]",
           collapsed ? "md:w-16" : "md:w-60"
         )}
       >
@@ -228,7 +279,10 @@ export function AppSidebar() {
 
         <ul className="flex flex-1 flex-col divide-y divide-sidebar-border border-b border-sidebar-border">
           {SECTIONS.map((section) => {
-            const active = pathname === section.href;
+            // A chat thread lives under Chats, so the section stays inked.
+            const active =
+              pathname === section.href ||
+              pathname.startsWith(`${section.href}/`);
             return (
               <li key={section.href}>
                 {/*
@@ -242,6 +296,9 @@ export function AppSidebar() {
                   onClick={() => setMobileOpen(false)}
                   aria-current={active ? "page" : undefined}
                   title={collapsed ? section.label : undefined}
+                  // The visible label is hidden when the index is collapsed,
+                  // so the name is stated rather than left to `title`.
+                  aria-label={section.label}
                   className={cn(
                     "relative flex items-center py-2 text-sm transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                     collapsed ? "md:justify-center md:px-0" : "px-4",

@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import {
   deleteAccountAction,
   type DeleteAccountActionState,
-} from "@/lib/actions/memory";
+} from "@/lib/actions/account";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ export function DeleteAccountForm() {
     <form action={formAction} className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">
         This permanently deletes your account and everything in it — semesters,
-        courses, tasks, notes, and memories. It cannot be undone.
+        courses, work, notes, memories and chats. It cannot be undone.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -41,7 +41,7 @@ export function DeleteAccountForm() {
       {state.error && (
         <div
           role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-xs border border-destructive/45 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {state.error}
         </div>

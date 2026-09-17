@@ -42,7 +42,7 @@ export function RunningHead({
       <span
         aria-hidden="true"
         className={cn(
-          "rule-pair animate-rule-draw",
+          "rule-pair",
           tone === "now" && "rule-pair-now",
           tone === "danger" && "rule-pair-danger"
         )}

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parseNoteInput } from "@/lib/note";
+import { parseNoteInput, parseNoteUpdate } from "@/lib/note";
 
 const baseInput = {
   title: "Subnetting cheatsheet",
@@ -63,5 +63,26 @@ describe("parseNoteInput", () => {
     const result = parseNoteInput({ ...baseInput, taskId: "task_123" });
 
     expect(result.success && result.data.taskId).toBe("task_123");
+  });
+});
+
+describe("parseNoteUpdate", () => {
+  test("turns an emptied course or piece of work into null, which unfiles it", () => {
+    const result = parseNoteUpdate({
+      title: "Subnetting",
+      body: "A /24 gives 254 hosts.",
+      courseId: "",
+      taskId: "",
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        title: "Subnetting",
+        body: "A /24 gives 254 hosts.",
+        courseId: null,
+        taskId: null,
+      },
+    });
   });
 });

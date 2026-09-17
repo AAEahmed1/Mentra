@@ -35,7 +35,7 @@ export default async function OnboardingPage() {
           </span>
           <span
             aria-hidden="true"
-            className="rule-pair animate-rule-draw self-center"
+            className="rule-pair self-center"
           />
         </div>
 

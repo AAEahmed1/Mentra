@@ -1,5 +1,5 @@
 import type { TaskPriority, TaskStatus } from "@/generated/prisma/enums";
-import { getEffectiveStatus } from "@/lib/task-status";
+import { calendarDaysUntil } from "@/lib/task-status";
 
 /**
  * The task fields ranking actually reads. Narrower than the Prisma model so
@@ -36,7 +36,6 @@ export type RankOptions = {
   availableMinutes?: number | undefined;
 };
 
-const DAY_MS = 86_400_000;
 
 /** Anything past this many days out is "upcoming" rather than pressing. */
 const DUE_SOON_DAYS = 3;
@@ -54,35 +53,15 @@ const PRIORITY_ORDER: Record<TaskPriority, number> = {
   low: 2,
 };
 
-/**
- * Whole calendar days between two moments, not elapsed hours.
- *
- * A deadline is a day, not an instant: something due today is due today all
- * day. Flooring the millisecond difference made a task due at midnight read as
- * "1 day over" by lunchtime, which is both wrong and alarming.
- */
-function daysUntil(dueDate: Date, now: Date): number {
-  const due = Date.UTC(
-    dueDate.getUTCFullYear(),
-    dueDate.getUTCMonth(),
-    dueDate.getUTCDate()
-  );
-  const today = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate()
-  );
-  return Math.round((due - today) / DAY_MS);
-}
-
 function urgencyOf(task: RankableTask, now: Date): Urgency {
   if (!task.dueDate) return "someday";
 
-  const days = daysUntil(task.dueDate, now);
+  const days = calendarDaysUntil(task.dueDate, now);
 
   // Overdue is measured in whole days too, so a deadline is not "missed" part
-  // way through the day it falls on.
-  if (days < 0 && getEffectiveStatus(task.status, task.dueDate, now) === "overdue") {
+  // way through the day it falls on. Closed work never reaches here: rankTasks
+  // filters it out first, so any open work before today has slipped.
+  if (days < 0) {
     return "overdue";
   }
 
@@ -101,7 +80,7 @@ function factorsFor(
 
   return {
     urgency: urgencyOf(task, now),
-    daysUntilDue: task.dueDate ? daysUntil(task.dueDate, now) : null,
+    daysUntilDue: task.dueDate ? calendarDaysUntil(task.dueDate, now) : null,
     priority: task.priority,
     estimatedDuration: task.estimatedDuration,
     fitsAvailableTime,

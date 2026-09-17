@@ -34,11 +34,10 @@ export function explainRecommendation(factors: RankFactors): string {
     clauses.push(`you marked it ${factors.priority} priority`);
   }
 
+  // Only work with an estimate can fail to fit, so there is always a figure.
   if (factors.fitsAvailableTime === false) {
     clauses.push(
-      factors.estimatedDuration
-        ? `the ${factors.estimatedDuration} min estimate is longer than the time you have`
-        : "it's longer than the time you have"
+      `the ${factors.estimatedDuration} min estimate is longer than the time you have`
     );
   } else if (factors.estimatedDuration) {
     clauses.push(`you estimated ${factors.estimatedDuration} min`);
@@ -49,6 +48,5 @@ export function explainRecommendation(factors: RankFactors): string {
       ? clauses[0]
       : `${clauses.slice(0, -1).join(", ")} and ${clauses[clauses.length - 1]}`;
 
-  const sentence = `Recommended because ${joined}.`;
-  return sentence[0].toUpperCase() + sentence.slice(1);
+  return `Recommended because ${joined}.`;
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireUserId } from "@/lib/session";
+import { getStudentTime } from "@/lib/student-time";
 import { AppShell } from "@/components/app-shell";
 import { RunningHead } from "@/components/running-head";
 import { searchNotesForUser } from "@/lib/services/note";
@@ -21,6 +22,7 @@ export default async function NotesPage({
   searchParams,
 }: PageProps<"/notes">) {
   const userId = await requireUserId();
+  const { now, timeZone } = await getStudentTime();
   const { q } = await searchParams;
   const query = typeof q === "string" ? q : "";
 
@@ -37,7 +39,7 @@ export default async function NotesPage({
     id: course.id,
     name: course.name,
   }));
-  const work = toWorkOptions(tasks, courseNameById, new Date());
+  const work = toWorkOptions(tasks, courseNameById, now);
   const workTitleById = new Map(tasks.map((task) => [task.id, task.title]));
 
   return (
@@ -89,6 +91,7 @@ export default async function NotesPage({
                 }
                 courses={courseOptions}
                 work={work}
+                timeZone={timeZone}
               />
             ))}
           </ul>

@@ -235,6 +235,31 @@ describe("searchNotesForUser", () => {
   });
 });
 
+describe("updateNote unfiling", () => {
+  test("clears the course and piece of work when given null", async () => {
+    const task = await prisma.task.create({
+      data: { userId, title: "Lab report", courseId },
+    });
+    const created = await createNote(userId, {
+      title: "Lab notes",
+      body: "Remember the diagram.",
+      courseId,
+      taskId: task.id,
+    });
+    if (!created.success) throw new Error("fixture creation failed");
+
+    const updated = await updateNote(userId, created.data.id, {
+      courseId: null,
+      taskId: null,
+    });
+
+    expect(updated.success && updated.data).toMatchObject({
+      courseId: null,
+      taskId: null,
+    });
+  });
+});
+
 describe("updateNote", () => {
   test("updates a note owned by the given user", async () => {
     const created = await createNote(userId, {

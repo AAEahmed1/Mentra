@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUserId } from "@/lib/session";
-import { parseTaskInput } from "@/lib/task";
-import type { TaskStatus } from "@/generated/prisma/enums";
+import { ROW_ACTION_OK, type RowActionResult } from "@/lib/action-state";
+import {
+  parseTaskCompletion,
+  parseTaskInput,
+  parseTaskUpdate,
+} from "@/lib/task";
 import {
   completeTask,
   createTask,
@@ -29,6 +33,16 @@ function readTaskFormFields(formData: FormData) {
   };
 }
 
+/**
+ * Work appears on the Work page, drives the ranking on Today, and fills the
+ * "about a piece of work" picker on Notes, so a change refreshes all three.
+ */
+function revalidateWork() {
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+  revalidatePath("/notes");
+}
+
 export async function createTaskAction(
   _prevState: TaskActionState,
   formData: FormData
@@ -42,10 +56,10 @@ export async function createTaskAction(
 
   const created = await createTask(userId, result.data);
   if (!created.success) {
-    return { errors: ["Course not found."] };
+    return { errors: ["That course no longer exists."] };
   }
 
-  revalidatePath("/tasks");
+  revalidateWork();
   return { errors: [] };
 }
 
@@ -56,43 +70,67 @@ export async function updateTaskAction(
   const userId = await requireUserId();
   const taskId = String(formData.get("taskId") ?? "");
 
-  const result = parseTaskInput(readTaskFormFields(formData));
+  const result = parseTaskUpdate({
+    ...readTaskFormFields(formData),
+    status: formData.get("status"),
+    actualDuration: formData.get("actualDuration"),
+  });
   if (!result.success) {
     return { errors: result.errors };
   }
 
-  const status = formData.get("status");
-  const updated = await updateTask(userId, taskId, {
-    ...result.data,
-    ...(typeof status === "string" && status
-      ? { status: status as TaskStatus }
-      : {}),
-  });
+  const updated = await updateTask(userId, taskId, result.data);
   if (!updated.success) {
-    return { errors: ["Task not found."] };
+    return {
+      errors: [
+        updated.error === "course_not_found"
+          ? "That course no longer exists."
+          : "That piece of work no longer exists.",
+      ],
+    };
   }
 
-  revalidatePath("/tasks");
+  revalidateWork();
   return { errors: [] };
 }
 
-export async function completeTaskAction(formData: FormData): Promise<void> {
+export async function completeTaskAction(
+  formData: FormData
+): Promise<RowActionResult> {
   const userId = await requireUserId();
   const taskId = String(formData.get("taskId") ?? "");
-  const actualDurationRaw = formData.get("actualDuration");
-  const actualDuration =
-    typeof actualDurationRaw === "string" && actualDurationRaw.trim() !== ""
-      ? Number(actualDurationRaw)
-      : undefined;
 
-  await completeTask(userId, taskId, actualDuration);
-  revalidatePath("/tasks");
+  const result = parseTaskCompletion({
+    actualDuration: formData.get("actualDuration"),
+  });
+  if (!result.success) {
+    return { error: result.errors[0] };
+  }
+
+  const completed = await completeTask(
+    userId,
+    taskId,
+    result.data.actualDuration
+  );
+  if (!completed.success) {
+    return { error: "That piece of work no longer exists." };
+  }
+
+  revalidateWork();
+  return ROW_ACTION_OK;
 }
 
-export async function deleteTaskAction(formData: FormData): Promise<void> {
+export async function deleteTaskAction(
+  formData: FormData
+): Promise<RowActionResult> {
   const userId = await requireUserId();
   const taskId = String(formData.get("taskId") ?? "");
 
-  await deleteTask(userId, taskId);
-  revalidatePath("/tasks");
+  const deleted = await deleteTask(userId, taskId);
+  if (!deleted.success) {
+    return { error: "That piece of work was already removed." };
+  }
+
+  revalidateWork();
+  return ROW_ACTION_OK;
 }

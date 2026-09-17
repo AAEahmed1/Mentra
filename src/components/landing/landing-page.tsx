@@ -24,10 +24,12 @@ import { SampleEdition } from "@/components/landing/sample-edition";
  * today, so what a visitor sees is what a student gets.
  */
 
+// `now` is the visitor's clock expressed in UTC (see getStudentTime).
 const dayFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
   month: "long",
   day: "numeric",
+  timeZone: "UTC",
 });
 
 const CTA_PRIMARY =
@@ -134,7 +136,7 @@ export function LandingPage({
         </div>
         <div
           aria-hidden="true"
-          className="animate-rule-draw h-1 origin-left bg-[linear-gradient(to_bottom,var(--rule-strong)_0_2px,transparent_2px_100%),linear-gradient(to_bottom,transparent_0_3px,var(--rule)_3px_4px)]"
+          className="h-1 bg-[linear-gradient(to_bottom,var(--rule-strong)_0_2px,transparent_2px_100%),linear-gradient(to_bottom,transparent_0_3px,var(--rule)_3px_4px)]"
         />
       </header>
 
@@ -318,7 +320,8 @@ export function LandingPage({
                   2
                 </td>
                 <Reads meaning="“it’s due tomorrow”">
-                  Due within the next three days
+                  Due within the next three days, then later work, then
+                  work with no date
                 </Reads>
                 <Meaning>“it&apos;s due tomorrow”</Meaning>
               </tr>
@@ -327,7 +330,7 @@ export function LandingPage({
                   3
                 </td>
                 <Reads meaning="“the 90 min estimate is longer than the time you have”">
-                  Fits the time you said you have
+                  Within each of those, what fits the time you said you have
                 </Reads>
                 <Meaning>
                   “the 90 min estimate is longer than the time you have”
@@ -352,7 +355,8 @@ export function LandingPage({
             </tbody>
           </table>
           <p className="max-w-[65ch] text-sm text-muted-foreground">
-            Priority only orders work within a rank. A low-priority worksheet
+            Fit, priority and deadline only order work within its group. A
+            low-priority worksheet
             due tomorrow still comes before a high-priority essay due in three
             weeks, which is the order a student actually wants.
           </p>
@@ -491,7 +495,7 @@ export function LandingPage({
                 <Reads meaning="Profile">Studying architecture, second year.</Reads>
                 <Meaning>Profile</Meaning>
                 <td className="text-right text-xs text-muted-foreground">
-                  You said so
+                  You told me
                 </td>
               </tr>
               <tr>
@@ -500,7 +504,7 @@ export function LandingPage({
                 </Reads>
                 <Meaning>Commitment</Meaning>
                 <td className="text-right text-xs text-muted-foreground">
-                  You said so
+                  You told me
                 </td>
               </tr>
               <tr>
@@ -509,16 +513,16 @@ export function LandingPage({
                 </Reads>
                 <Meaning>Learning state</Meaning>
                 <td className="text-right text-xs text-muted-foreground">
-                  Inferred
+                  I inferred
                 </td>
               </tr>
               <tr>
-                <Reads meaning="Behavioural">
+                <Reads meaning="Behavioral">
                   Estimates for reading run short.
                 </Reads>
-                <Meaning>Behavioural</Meaning>
+                <Meaning>Behavioral</Meaning>
                 <td className="text-right text-xs text-muted-foreground">
-                  Inferred
+                  I inferred
                 </td>
               </tr>
             </tbody>

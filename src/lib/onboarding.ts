@@ -1,34 +1,30 @@
 import { z } from "zod";
 
-const blankToUndefined = (value: unknown) => {
-  if (value === null) return undefined;
-  if (typeof value === "string" && value.trim() === "") return undefined;
-  return value;
-};
+import {
+  blankToUndefined,
+  limitMessage,
+  parseWith,
+  type ParseResult,
+} from "@/lib/form-values";
 
+// The same limits the profile page applies to these fields.
 const onboardingSchema = z.object({
-  program: z.preprocess(blankToUndefined, z.string().trim().optional()),
-  institution: z.preprocess(blankToUndefined, z.string().trim().optional()),
+  program: z.preprocess(
+    blankToUndefined,
+    z.string().trim().max(120, limitMessage("Program", 120)).optional()
+  ),
+  institution: z.preprocess(
+    blankToUndefined,
+    z.string().trim().max(120, limitMessage("Institution", 120)).optional()
+  ),
 });
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
-
-export type OnboardingResult =
-  | { success: true; data: OnboardingInput }
-  | { success: false; errors: string[] };
+export type OnboardingResult = ParseResult<OnboardingInput>;
 
 export function parseOnboardingInput(input: {
   program: FormDataEntryValue | null;
   institution: FormDataEntryValue | null;
 }): OnboardingResult {
-  const result = onboardingSchema.safeParse(input);
-
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.issues.map((issue) => issue.message),
-    };
-  }
-
-  return { success: true, data: result.data };
+  return parseWith(onboardingSchema, input);
 }

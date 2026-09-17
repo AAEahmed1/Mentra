@@ -1,4 +1,4 @@
-import { getEffectiveStatus } from "@/lib/task-status";
+import { calendarDaysUntil, getEffectiveStatus } from "@/lib/task-status";
 import type { RankableTask } from "@/lib/recommendations";
 
 /**
@@ -25,15 +25,6 @@ function dueDetail(daysUntilDue: number | null, overdue: boolean): string {
   return `due in ${daysUntilDue} days`;
 }
 
-const DAY = 86_400_000;
-
-/** Whole calendar days between two dates, ignoring the time of day. */
-function daysBetween(from: Date, to: Date): number {
-  const a = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());
-  const b = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
-  return Math.round((b - a) / DAY);
-}
-
 /**
  * Turns the student's open work into pickable lines, soonest first.
  *
@@ -51,7 +42,7 @@ export function toWorkOptions(
       (task) => task.status !== "completed" && task.status !== "cancelled"
     )
     .map((task) => {
-      const days = task.dueDate ? daysBetween(now, task.dueDate) : null;
+      const days = task.dueDate ? calendarDaysUntil(task.dueDate, now) : null;
       const overdue =
         getEffectiveStatus(task.status, task.dueDate, now) === "overdue";
       const course = task.courseId

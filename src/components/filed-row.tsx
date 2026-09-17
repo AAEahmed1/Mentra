@@ -19,10 +19,13 @@ export function FiledRow({
   align = "center",
   children,
   actions,
+  error = null,
 }: {
   align?: "center" | "start";
   children: ReactNode;
   actions: ReactNode;
+  /** Why a row action (complete, remove, forget) did not happen. */
+  error?: string | null;
 }) {
   return (
     <li
@@ -32,10 +35,19 @@ export function FiledRow({
       )}
     >
       {children}
-      {/* Actions stay out of the way until the row is under the pointer. */}
-      <div className="flex items-center gap-1 opacity-100 transition-opacity focus-within:opacity-100 md:opacity-0 md:group-hover:opacity-100">
+      {/*
+        Actions stay out of the way until the row is under the pointer — but
+        only where there is a pointer that can hover. A tablet at md width with
+        no mouse keeps them visible, as a phone does.
+      */}
+      <div className="flex items-center gap-1 opacity-100 transition-opacity focus-within:opacity-100 md:pointer-fine:opacity-0 md:pointer-fine:group-hover:opacity-100">
         {actions}
       </div>
+      {error && (
+        <p role="alert" className="w-full text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </li>
   );
 }

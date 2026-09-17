@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { hasGoogleAuth } from "@/lib/auth";
 import { getSession } from "@/lib/session";
+import { getStudentTime } from "@/lib/student-time";
 import { LandingPage } from "@/components/landing/landing-page";
 
 export const metadata: Metadata = {
@@ -23,5 +24,7 @@ export default async function RootPage() {
     redirect("/dashboard");
   }
 
-  return <LandingPage now={new Date()} googleSignIn={hasGoogleAuth} />;
+  const { now } = await getStudentTime();
+
+  return <LandingPage now={now} googleSignIn={hasGoogleAuth} />;
 }

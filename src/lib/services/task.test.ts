@@ -197,6 +197,87 @@ describe("updateTask", () => {
   });
 });
 
+describe("updateTask links and clearing", () => {
+  test("clears the course and optional fields when given null", async () => {
+    const created = await createTask(userId, {
+      title: "Finish lab",
+      description: "Parts 1 to 3",
+      dueDate: new Date("2026-09-20"),
+      priority: "medium",
+      estimatedDuration: 60,
+      type: "task",
+      topicsToReview: "Subnetting",
+      courseId,
+    });
+    if (!created.success) throw new Error("fixture creation failed");
+
+    const updated = await updateTask(userId, created.data.id, {
+      courseId: null,
+      dueDate: null,
+      description: null,
+      estimatedDuration: null,
+      topicsToReview: null,
+    });
+
+    expect(updated.success && updated.data).toMatchObject({
+      courseId: null,
+      dueDate: null,
+      description: null,
+      estimatedDuration: null,
+      topicsToReview: null,
+    });
+  });
+
+  test("refuses to file a task under another student's course", async () => {
+    const otherUser = await prisma.user.create({
+      data: {
+        name: "Other Student",
+        email: `test-task-course-${randomUUID()}@example.com`,
+        emailVerified: true,
+      },
+    });
+    const otherSemester = await createSemester(otherUser.id, {
+      name: "Their term",
+      startDate: new Date("2026-09-01"),
+      endDate: new Date("2026-12-15"),
+    });
+    const otherCourse = await createCourse(otherUser.id, otherSemester.id, {
+      name: "Their course",
+      code: undefined,
+      professor: undefined,
+      credits: undefined,
+    });
+    if (!otherCourse.success) throw new Error("fixture creation failed");
+
+    try {
+      const created = await createTask(userId, {
+        title: "Mine",
+        description: undefined,
+        dueDate: undefined,
+        priority: "medium",
+        estimatedDuration: undefined,
+        type: "task",
+        topicsToReview: undefined,
+        courseId: undefined,
+      });
+      if (!created.success) throw new Error("fixture creation failed");
+
+      const result = await updateTask(userId, created.data.id, {
+        courseId: otherCourse.data.id,
+      });
+
+      expect(result).toEqual({ success: false, error: "course_not_found" });
+      const stored = await prisma.task.findUniqueOrThrow({
+        where: { id: created.data.id },
+      });
+      expect(stored.courseId).toBeNull();
+    } finally {
+      await prisma.course.deleteMany({ where: { semesterId: otherSemester.id } });
+      await prisma.user.delete({ where: { id: otherUser.id } });
+    }
+  });
+});
+
 describe("completeTask", () => {
   test("marks a task completed without recording actual duration when none is given", async () => {
     const created = await createTask(userId, {

@@ -12,7 +12,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DeleteCourseButton } from "@/components/courses/delete-course-button";
+import {
+  DeleteCourseButton,
+  useDeleteCourse,
+} from "@/components/courses/delete-course-button";
 
 type Course = {
   id: string;
@@ -24,6 +27,7 @@ type Course = {
 
 export function CourseRow({ course }: { course: Course }) {
   const edit = useInlineEdit(updateCourseAction);
+  const remove = useDeleteCourse();
 
   if (!edit.isEditing) {
     const metadata = [
@@ -36,12 +40,23 @@ export function CourseRow({ course }: { course: Course }) {
 
     return (
       <FiledRow
+        error={remove.error}
         actions={
           <>
-            <Button type="button" variant="ghost" size="sm" onClick={edit.open}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label={`Edit ${course.name}`}
+              onClick={edit.open}
+            >
               Edit
             </Button>
-            <DeleteCourseButton courseId={course.id} />
+            <DeleteCourseButton
+              courseId={course.id}
+              courseName={course.name}
+              remove={remove}
+            />
           </>
         }
       >

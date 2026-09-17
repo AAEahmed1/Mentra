@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireUserId } from "@/lib/session";
+import { getStudentTime } from "@/lib/student-time";
 import { AppShell } from "@/components/app-shell";
 import { prisma } from "@/lib/prisma";
 import { greetingForHour } from "@/lib/greeting";
@@ -22,10 +23,13 @@ export const metadata: Metadata = {
   title: "Today — Mentra",
 };
 
+// `now` is the student's clock expressed in UTC (see getStudentTime), so it is
+// formatted in UTC to read back their own day.
 const dayFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
   month: "long",
   day: "numeric",
+  timeZone: "UTC",
 });
 
 /** How many entries are listed under today's before the table is cut off. */
@@ -35,7 +39,7 @@ export default async function DashboardPage({
   searchParams,
 }: PageProps<"/dashboard">) {
   const userId = await requireUserId();
-  const now = new Date();
+  const { now } = await getStudentTime();
 
   const { minutes } = await searchParams;
   const availableMinutes = parseAvailableMinutes(minutes);
@@ -43,7 +47,7 @@ export default async function DashboardPage({
   const [user, tasks, courses, notes] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, program: true },
+      select: { name: true },
     }),
     listTasksForUser(userId),
     listCoursesForUser(userId),
@@ -66,9 +70,13 @@ export default async function DashboardPage({
   const [struck, ...rest] = ranked;
   const lanes = rest.slice(0, LANE_LIMIT);
 
+  // Today through a week from today. Overdue work is not "due this week"; it
+  // already leads the page in the slipped plate.
   const dueThisWeek = ranked.filter(
     (entry) =>
-      entry.factors.daysUntilDue !== null && entry.factors.daysUntilDue <= 7
+      entry.factors.daysUntilDue !== null &&
+      entry.factors.daysUntilDue >= 0 &&
+      entry.factors.daysUntilDue <= 7
   ).length;
 
   const struckCourse = struck?.task.courseId
@@ -80,7 +88,7 @@ export default async function DashboardPage({
 
   return (
     <AppShell
-      title={`${greetingForHour(now.getHours())}, ${user?.name ?? "there"}.`}
+      title={`${greetingForHour(now.getUTCHours())}, ${user?.name ?? "there"}.`}
       lede={
         <>
           <time dateTime={now.toISOString().slice(0, 10)}>

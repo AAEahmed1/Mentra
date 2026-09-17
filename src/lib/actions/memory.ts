@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { requireUserId } from "@/lib/session";
+import { ROW_ACTION_OK, type RowActionResult } from "@/lib/action-state";
 import { parseMemoryInput } from "@/lib/memory";
 import { createMemory, deleteMemory } from "@/lib/services/memory";
-import { deleteAccount } from "@/lib/services/account";
 
 export type MemoryActionState = {
   errors: string[];
@@ -34,30 +33,17 @@ export async function createMemoryAction(
   return { errors: [] };
 }
 
-export async function deleteMemoryAction(formData: FormData): Promise<void> {
+export async function deleteMemoryAction(
+  formData: FormData
+): Promise<RowActionResult> {
   const userId = await requireUserId();
   const memoryId = String(formData.get("memoryId") ?? "");
 
-  await deleteMemory(userId, memoryId);
-  revalidatePath("/privacy");
-}
-
-export type DeleteAccountActionState = {
-  error: string | null;
-};
-
-export async function deleteAccountAction(
-  _prevState: DeleteAccountActionState,
-  formData: FormData
-): Promise<DeleteAccountActionState> {
-  const userId = await requireUserId();
-  const confirmation = String(formData.get("confirmation") ?? "").trim();
-
-  if (confirmation !== "DELETE") {
-    return { error: 'Type DELETE exactly to confirm.' };
+  const deleted = await deleteMemory(userId, memoryId);
+  if (!deleted.success) {
+    return { error: "That memory was already forgotten." };
   }
 
-  await deleteAccount(userId);
-
-  redirect("/sign-in");
+  revalidatePath("/privacy");
+  return ROW_ACTION_OK;
 }

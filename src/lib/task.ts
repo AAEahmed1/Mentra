@@ -1,48 +1,117 @@
 import { z } from "zod";
 
-const blankToUndefined = (value: unknown) => {
-  if (value === null) return undefined;
-  if (typeof value === "string" && value.trim() === "") return undefined;
-  return value;
-};
+import {
+  blankToClear,
+  blankToUndefined,
+  limitMessage,
+  parseWith,
+  type ParseResult,
+} from "@/lib/form-values";
+
+export const TASK_STATUSES = [
+  "not_started",
+  "in_progress",
+  "paused",
+  "completed",
+  "cancelled",
+] as const;
+
+/** A week of minutes. No single piece of work is planned for longer. */
+export const MAX_TASK_MINUTES = 10_080;
+
+const title = z
+  .string({ error: "Title is required" })
+  .trim()
+  .min(1, "Title is required")
+  .max(200, limitMessage("Title", 200));
+
+const description = z
+  .string()
+  .trim()
+  .max(2000, limitMessage("Description", 2000));
+
+const dueDate = z.coerce.date({ error: "Due date must be a valid date" });
+
+function minutes(label: string) {
+  return z.coerce
+    .number({ error: `${label} must be a number` })
+    .int(`${label} must be a whole number of minutes`)
+    .nonnegative(`${label} cannot be negative`)
+    .max(MAX_TASK_MINUTES, `${label} can be at most a week`);
+}
+
+const topicsToReview = z
+  .string()
+  .trim()
+  .max(1000, limitMessage("Topics to review", 1000));
+
+const id = z.string().trim();
+
+const priority = z.preprocess(
+  blankToUndefined,
+  z.enum(["low", "medium", "high"], { error: "Pick a priority" }).default("medium")
+);
+
+const type = z.preprocess(
+  blankToUndefined,
+  z.enum(["task", "assignment", "exam"], { error: "Pick a type" }).default("task")
+);
 
 const taskSchema = z.object({
-  title: z.string().trim().min(1, "Title is required"),
-  description: z.preprocess(blankToUndefined, z.string().trim().optional()),
-  dueDate: z.preprocess(
-    blankToUndefined,
-    z.coerce.date({ error: "Due date must be a valid date" }).optional()
-  ),
-  priority: z.preprocess(
-    blankToUndefined,
-    z.enum(["low", "medium", "high"]).default("medium")
-  ),
+  title,
+  description: z.preprocess(blankToUndefined, description.optional()),
+  dueDate: z.preprocess(blankToUndefined, dueDate.optional()),
+  priority,
   estimatedDuration: z.preprocess(
     blankToUndefined,
-    z.coerce
-      .number({ error: "Estimated duration must be a number" })
-      .int()
-      .nonnegative("Estimated duration cannot be negative")
-      .optional()
+    minutes("Estimated duration").optional()
   ),
-  type: z.preprocess(
+  type,
+  topicsToReview: z.preprocess(blankToUndefined, topicsToReview.optional()),
+  courseId: z.preprocess(blankToUndefined, id.optional()),
+});
+
+/**
+ * The edit form. Optional fields the student empties become null so the
+ * stored value is cleared; see `blankToClear`.
+ */
+const taskUpdateSchema = z.object({
+  title,
+  description: z.preprocess(blankToClear, description.nullable().optional()),
+  dueDate: z.preprocess(blankToClear, dueDate.nullable().optional()),
+  priority,
+  estimatedDuration: z.preprocess(
+    blankToClear,
+    minutes("Estimated duration").nullable().optional()
+  ),
+  actualDuration: z.preprocess(
+    blankToClear,
+    minutes("Actual time").nullable().optional()
+  ),
+  type,
+  status: z.preprocess(
     blankToUndefined,
-    z.enum(["task", "assignment", "exam"]).default("task")
+    z.enum(TASK_STATUSES, { error: "Pick a valid status" }).optional()
   ),
   topicsToReview: z.preprocess(
-    blankToUndefined,
-    z.string().trim().optional()
+    blankToClear,
+    topicsToReview.nullable().optional()
   ),
-  courseId: z.preprocess(blankToUndefined, z.string().trim().optional()),
+  courseId: z.preprocess(blankToClear, id.nullable().optional()),
+});
+
+const completionSchema = z.object({
+  actualDuration: z.preprocess(
+    blankToUndefined,
+    minutes("Actual time").optional()
+  ),
 });
 
 export type TaskInput = z.infer<typeof taskSchema>;
+export type TaskUpdateInput = z.infer<typeof taskUpdateSchema>;
+export type TaskResult = ParseResult<TaskInput>;
 
-export type TaskResult =
-  | { success: true; data: TaskInput }
-  | { success: false; errors: string[] };
-
-export function parseTaskInput(input: {
+type TaskFormFields = {
   title: FormDataEntryValue | null;
   description: FormDataEntryValue | null;
   dueDate: FormDataEntryValue | null;
@@ -51,15 +120,23 @@ export function parseTaskInput(input: {
   type: FormDataEntryValue | null;
   topicsToReview: FormDataEntryValue | null;
   courseId: FormDataEntryValue | null;
-}): TaskResult {
-  const result = taskSchema.safeParse(input);
+};
 
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.issues.map((issue) => issue.message),
-    };
+export function parseTaskInput(input: TaskFormFields): TaskResult {
+  return parseWith(taskSchema, input);
+}
+
+export function parseTaskUpdate(
+  input: TaskFormFields & {
+    status: FormDataEntryValue | null;
+    actualDuration: FormDataEntryValue | null;
   }
+): ParseResult<TaskUpdateInput> {
+  return parseWith(taskUpdateSchema, input);
+}
 
-  return { success: true, data: result.data };
+export function parseTaskCompletion(input: {
+  actualDuration: FormDataEntryValue | null;
+}): ParseResult<z.infer<typeof completionSchema>> {
+  return parseWith(completionSchema, input);
 }

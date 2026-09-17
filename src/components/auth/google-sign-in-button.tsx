@@ -11,7 +11,13 @@ export function GoogleSignInButton({ label }: { label: string }) {
       variant="outline"
       className="w-full"
       onClick={() =>
-        signIn.social({ provider: "google", callbackURL: "/dashboard" })
+        signIn.social({
+          provider: "google",
+          callbackURL: "/dashboard",
+          // A first sign-in with Google creates the account, so it gets the
+          // same "what are you studying?" step an email sign-up does.
+          newUserCallbackURL: "/onboarding",
+        })
       }
     >
       <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">

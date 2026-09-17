@@ -31,6 +31,7 @@ export async function createSemesterAction(
 
   await createSemester(userId, result.data);
   revalidatePath("/courses");
+  revalidatePath("/dashboard");
 
   return { errors: [] };
 }
@@ -58,5 +59,6 @@ export async function deleteSemesterAction(
   }
 
   revalidatePath("/courses");
+  revalidatePath("/dashboard");
   return { error: null };
 }

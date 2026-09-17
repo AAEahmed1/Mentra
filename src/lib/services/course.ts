@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Course } from "@/generated/prisma/client";
 import type { CourseInput } from "@/lib/course";
+import { isForeignKeyViolation } from "@/lib/services/prisma-errors";
 
 export type CreateCourseResult =
   | { success: true; data: Course }
@@ -19,11 +20,17 @@ export async function createCourse(
     return { success: false, error: "not_found" };
   }
 
-  const course = await prisma.course.create({
-    data: { ...data, semesterId },
-  });
-
-  return { success: true, data: course };
+  try {
+    const course = await prisma.course.create({
+      data: { ...data, semesterId },
+    });
+    return { success: true, data: course };
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      return { success: false, error: "not_found" };
+    }
+    throw error;
+  }
 }
 
 export function listCoursesForSemester(
@@ -43,6 +50,17 @@ export function listCoursesForUser(userId: string): Promise<Course[]> {
   });
 }
 
+/**
+ * The fields an update may change. `undefined` leaves a field as it is; `null`
+ * clears an optional one.
+ */
+export type CourseUpdate = {
+  name?: string;
+  code?: string | null;
+  professor?: string | null;
+  credits?: number | null;
+};
+
 export type UpdateCourseResult =
   | { success: true; data: Course }
   | { success: false; error: "not_found" };
@@ -50,7 +68,7 @@ export type UpdateCourseResult =
 export async function updateCourse(
   userId: string,
   courseId: string,
-  data: Partial<CourseInput>
+  data: CourseUpdate
 ): Promise<UpdateCourseResult> {
   const { count } = await prisma.course.updateMany({
     where: { id: courseId, semester: { userId } },
@@ -61,9 +79,12 @@ export async function updateCourse(
     return { success: false, error: "not_found" };
   }
 
-  const course = await prisma.course.findUniqueOrThrow({
-    where: { id: courseId },
+  const course = await prisma.course.findFirst({
+    where: { id: courseId, semester: { userId } },
   });
+  if (!course) {
+    return { success: false, error: "not_found" };
+  }
 
   return { success: true, data: course };
 }

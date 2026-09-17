@@ -1,38 +1,59 @@
 import { z } from "zod";
 
-const blankToUndefined = (value: unknown) => {
-  if (value === null) return undefined;
-  if (typeof value === "string" && value.trim() === "") return undefined;
-  return value;
-};
+import {
+  blankToClear,
+  blankToUndefined,
+  limitMessage,
+  parseWith,
+  type ParseResult,
+} from "@/lib/form-values";
+
+const title = z
+  .string({ error: "Title is required" })
+  .trim()
+  .min(1, "Title is required")
+  .max(200, limitMessage("Title", 200));
+
+const body = z
+  .string({ error: "Body is required" })
+  .trim()
+  .min(1, "Body is required")
+  .max(20_000, limitMessage("A note", 20_000));
+
+const id = z.string().trim();
 
 const noteSchema = z.object({
-  title: z.string().trim().min(1, "Title is required"),
-  body: z.string().trim().min(1, "Body is required"),
-  courseId: z.preprocess(blankToUndefined, z.string().trim().optional()),
-  taskId: z.preprocess(blankToUndefined, z.string().trim().optional()),
+  title,
+  body,
+  courseId: z.preprocess(blankToUndefined, id.optional()),
+  taskId: z.preprocess(blankToUndefined, id.optional()),
+});
+
+/** The edit form: choosing "No course" or "Not about anything" unfiles it. */
+const noteUpdateSchema = z.object({
+  title,
+  body,
+  courseId: z.preprocess(blankToClear, id.nullable().optional()),
+  taskId: z.preprocess(blankToClear, id.nullable().optional()),
 });
 
 export type NoteInput = z.infer<typeof noteSchema>;
+export type NoteUpdateInput = z.infer<typeof noteUpdateSchema>;
+export type NoteResult = ParseResult<NoteInput>;
 
-export type NoteResult =
-  | { success: true; data: NoteInput }
-  | { success: false; errors: string[] };
-
-export function parseNoteInput(input: {
+type NoteFormFields = {
   title: FormDataEntryValue | null;
   body: FormDataEntryValue | null;
   courseId: FormDataEntryValue | null;
   taskId: FormDataEntryValue | null;
-}): NoteResult {
-  const result = noteSchema.safeParse(input);
+};
 
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.issues.map((issue) => issue.message),
-    };
-  }
+export function parseNoteInput(input: NoteFormFields): NoteResult {
+  return parseWith(noteSchema, input);
+}
 
-  return { success: true, data: result.data };
+export function parseNoteUpdate(
+  input: NoteFormFields
+): ParseResult<NoteUpdateInput> {
+  return parseWith(noteUpdateSchema, input);
 }

@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import type { RowActionResult } from "@/lib/action-state";
+
 type FormActionState = { errors: string[] };
 
 type FormAction = (
@@ -9,7 +11,7 @@ type FormAction = (
   formData: FormData
 ) => Promise<FormActionState>;
 
-type VoidAction = (formData: FormData) => Promise<void>;
+type RowAction = (formData: FormData) => Promise<RowActionResult>;
 
 /**
  * The read-then-edit-in-place behaviour every filed row shares.
@@ -53,18 +55,24 @@ export function useInlineEdit(action: FormAction) {
 
 /**
  * A one-shot row action with no form behind it — delete, complete, forget.
- * Builds the single-field FormData these server actions expect.
+ * Builds the single-field FormData these server actions expect, and keeps the
+ * action's error so a row can say when nothing happened instead of staying
+ * silent.
  */
-export function useRowAction(action: VoidAction) {
+export function useRowAction(action: RowAction) {
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function run(field: string, value: string) {
     const formData = new FormData();
     formData.set(field, value);
-    startTransition(() => action(formData));
+    startTransition(async () => {
+      const result = await action(formData);
+      setError(result.error);
+    });
   }
 
-  return { isPending, run };
+  return { isPending, error, run };
 }
 
 /**

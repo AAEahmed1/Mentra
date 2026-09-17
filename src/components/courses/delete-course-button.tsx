@@ -1,20 +1,32 @@
 "use client";
 
 import { deleteCourseAction } from "@/lib/actions/course";
-import { Button } from "@/components/ui/button";
+import { useRowAction } from "@/lib/use-row-actions";
+import { ConfirmAction } from "@/components/confirm-action";
 
-export function DeleteCourseButton({ courseId }: { courseId: string }) {
+/**
+ * Removing a course keeps its work and notes but unfiles all of them, so it is
+ * asked twice. Returns the row action too, so the row can print its error.
+ */
+export function useDeleteCourse() {
+  return useRowAction(deleteCourseAction);
+}
+
+export function DeleteCourseButton({
+  courseId,
+  courseName,
+  remove,
+}: {
+  courseId: string;
+  courseName: string;
+  remove: ReturnType<typeof useDeleteCourse>;
+}) {
   return (
-    <form action={deleteCourseAction}>
-      <input type="hidden" name="courseId" value={courseId} />
-      <Button
-        type="submit"
-        variant="ghost"
-        size="sm"
-        aria-label="Delete course"
-      >
-        Remove
-      </Button>
-    </form>
+    <ConfirmAction
+      label="Remove"
+      itemName={courseName}
+      onConfirm={() => remove.run("courseId", courseId)}
+      isPending={remove.isPending}
+    />
   );
 }

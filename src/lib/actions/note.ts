@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUserId } from "@/lib/session";
-import { parseNoteInput } from "@/lib/note";
+import { ROW_ACTION_OK, type RowActionResult } from "@/lib/action-state";
+import { parseNoteInput, parseNoteUpdate } from "@/lib/note";
 import { createNote, deleteNote, updateNote } from "@/lib/services/note";
 
 export type NoteActionState = {
@@ -28,6 +29,12 @@ function readNoteFormFields(formData: FormData) {
   };
 }
 
+function revalidateNotes() {
+  revalidatePath("/notes");
+  revalidatePath("/dashboard");
+  revalidatePath("/tasks");
+}
+
 export async function createNoteAction(
   _prevState: NoteActionState,
   formData: FormData
@@ -44,9 +51,7 @@ export async function createNoteAction(
     return { errors: [linkError(created.error)] };
   }
 
-  revalidatePath("/notes");
-  revalidatePath("/dashboard");
-  revalidatePath("/tasks");
+  revalidateNotes();
   return { errors: [] };
 }
 
@@ -57,7 +62,7 @@ export async function updateNoteAction(
   const userId = await requireUserId();
   const noteId = String(formData.get("noteId") ?? "");
 
-  const result = parseNoteInput(readNoteFormFields(formData));
+  const result = parseNoteUpdate(readNoteFormFields(formData));
   if (!result.success) {
     return { errors: result.errors };
   }
@@ -67,18 +72,21 @@ export async function updateNoteAction(
     return { errors: [linkError(updated.error)] };
   }
 
-  revalidatePath("/notes");
-  revalidatePath("/dashboard");
-  revalidatePath("/tasks");
+  revalidateNotes();
   return { errors: [] };
 }
 
-export async function deleteNoteAction(formData: FormData): Promise<void> {
+export async function deleteNoteAction(
+  formData: FormData
+): Promise<RowActionResult> {
   const userId = await requireUserId();
   const noteId = String(formData.get("noteId") ?? "");
 
-  await deleteNote(userId, noteId);
-  revalidatePath("/notes");
-  revalidatePath("/dashboard");
-  revalidatePath("/tasks");
+  const deleted = await deleteNote(userId, noteId);
+  if (!deleted.success) {
+    return { error: "That note was already removed." };
+  }
+
+  revalidateNotes();
+  return ROW_ACTION_OK;
 }

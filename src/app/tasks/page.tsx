@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { requireUserId } from "@/lib/session";
+import { getStudentTime } from "@/lib/student-time";
 import { AppShell } from "@/components/app-shell";
 import { RunningHead } from "@/components/running-head";
 import { listTasksForUser } from "@/lib/services/task";
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 
 export default async function TasksPage() {
   const userId = await requireUserId();
+  const { now } = await getStudentTime();
   const [tasks, courses, notes] = await Promise.all([
     listTasksForUser(userId),
     listCoursesForUser(userId),
@@ -57,6 +59,7 @@ export default async function TasksPage() {
                 }
                 notes={notesByTaskId.get(task.id) ?? []}
                 courses={courseOptions}
+                today={now}
               />
             ))}
           </ul>

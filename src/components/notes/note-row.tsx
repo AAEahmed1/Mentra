@@ -16,12 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { WorkOption } from "@/lib/work-options";
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  timeZone: "UTC",
-});
+import { ConfirmAction } from "@/components/confirm-action";
 
 type CourseOption = { id: string; name: string };
 
@@ -31,38 +26,50 @@ export function NoteRow({
   workTitle,
   courses,
   work,
+  timeZone,
 }: {
   note: Note;
   courseName: string | null;
   workTitle: string | null;
   courses: CourseOption[];
   work: WorkOption[];
+  /** The student's zone, so "written Sep 16" is their Sep 16. */
+  timeZone: string;
 }) {
   const edit = useInlineEdit(updateNoteAction);
   const remove = useRowAction(deleteNoteAction);
 
   if (!edit.isEditing) {
-    const metadata = [courseName, dateFormatter.format(note.createdAt)]
+    const written = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone,
+    }).format(note.createdAt);
+    const metadata = [courseName, written]
       .filter(Boolean)
       .join(" · ");
 
     return (
       <FiledRow
         align="start"
+        error={remove.error}
         actions={
           <>
-            <Button type="button" variant="ghost" size="sm" onClick={edit.open}>
-              Edit
-            </Button>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => remove.run("noteId", note.id)}
-              disabled={remove.isPending}
+              aria-label={`Edit ${note.title}`}
+              onClick={edit.open}
             >
-              Remove
+              Edit
             </Button>
+            <ConfirmAction
+              label="Remove"
+              itemName={note.title}
+              onConfirm={() => remove.run("noteId", note.id)}
+              isPending={remove.isPending}
+            />
           </>
         }
       >
@@ -140,6 +147,17 @@ export function NoteRow({
             defaultValue={note.taskId ?? ""}
           >
             <option value="">Not about anything in particular</option>
+            {/*
+              The picker only offers open work. A note about work that has
+              since been completed or cancelled still needs its own option,
+              or the select would fall back to "nothing" and saving would
+              silently detach it.
+            */}
+            {note.taskId &&
+              workTitle &&
+              !work.some((item) => item.id === note.taskId) && (
+                <option value={note.taskId}>{workTitle} — closed</option>
+              )}
             {work.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.title} — {item.detail}

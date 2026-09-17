@@ -1,29 +1,38 @@
 import { prisma } from "@/lib/prisma";
 import type { Task, TaskStatus } from "@/generated/prisma/client";
 import type { TaskInput } from "@/lib/task";
+import { isForeignKeyViolation } from "@/lib/services/prisma-errors";
 
 export type CreateTaskResult =
   | { success: true; data: Task }
   | { success: false; error: "course_not_found" };
 
+/** Whether a course id is one of this student's courses. */
+function ownsCourse(userId: string, courseId: string): Promise<boolean> {
+  return prisma.course
+    .count({ where: { id: courseId, semester: { userId } } })
+    .then((count) => count > 0);
+}
+
 export async function createTask(
   userId: string,
   data: TaskInput
 ): Promise<CreateTaskResult> {
-  if (data.courseId) {
-    const course = await prisma.course.findFirst({
-      where: { id: data.courseId, semester: { userId } },
-    });
-    if (!course) {
-      return { success: false, error: "course_not_found" };
-    }
+  if (data.courseId && !(await ownsCourse(userId, data.courseId))) {
+    return { success: false, error: "course_not_found" };
   }
 
-  const task = await prisma.task.create({
-    data: { ...data, userId },
-  });
-
-  return { success: true, data: task };
+  try {
+    const task = await prisma.task.create({
+      data: { ...data, userId },
+    });
+    return { success: true, data: task };
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      return { success: false, error: "course_not_found" };
+    }
+    throw error;
+  }
 }
 
 export function listTasksForUser(userId: string): Promise<Task[]> {
@@ -33,27 +42,61 @@ export function listTasksForUser(userId: string): Promise<Task[]> {
   });
 }
 
+/**
+ * The fields an update may change. `undefined` leaves a field as it is; `null`
+ * clears an optional one.
+ */
+export type TaskUpdate = {
+  title?: string;
+  description?: string | null;
+  dueDate?: Date | null;
+  priority?: Task["priority"];
+  estimatedDuration?: number | null;
+  actualDuration?: number | null;
+  type?: Task["type"];
+  status?: TaskStatus;
+  topicsToReview?: string | null;
+  courseId?: string | null;
+};
+
 export type UpdateTaskResult =
   | { success: true; data: Task }
-  | { success: false; error: "not_found" };
+  | { success: false; error: "not_found" | "course_not_found" };
 
 export async function updateTask(
   userId: string,
   taskId: string,
-  data: Partial<TaskInput> & { status?: TaskStatus }
+  data: TaskUpdate
 ): Promise<UpdateTaskResult> {
-  const { count } = await prisma.task.updateMany({
-    where: { id: taskId, userId },
-    data,
-  });
+  // The same ownership proof creating work needs: a course id from a form is
+  // not trusted to be this student's just because the task is.
+  if (data.courseId && !(await ownsCourse(userId, data.courseId))) {
+    return { success: false, error: "course_not_found" };
+  }
+
+  let count: number;
+  try {
+    ({ count } = await prisma.task.updateMany({
+      where: { id: taskId, userId },
+      data,
+    }));
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      return { success: false, error: "course_not_found" };
+    }
+    throw error;
+  }
 
   if (count === 0) {
     return { success: false, error: "not_found" };
   }
 
-  const task = await prisma.task.findUniqueOrThrow({
-    where: { id: taskId },
-  });
+  // Read back scoped to the student as well: if the task was deleted in the
+  // moment since the update, that is "not found", not a thrown error.
+  const task = await prisma.task.findFirst({ where: { id: taskId, userId } });
+  if (!task) {
+    return { success: false, error: "not_found" };
+  }
 
   return { success: true, data: task };
 }

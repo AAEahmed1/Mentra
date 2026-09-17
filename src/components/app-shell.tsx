@@ -23,10 +23,23 @@ export function AppShell({
 }) {
   return (
     <div className="flex min-h-svh flex-col md:flex-row">
+      {/* First in the tab order, visible only when focused, so a keyboard
+          reader can pass the seven section links on every page. */}
+      <a
+        href="#main-content"
+        className="sr-only z-[70] rounded-xs bg-plate-now px-3 py-2 text-sm font-medium text-plate-now-ink focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        Skip to content
+      </a>
       <AppSidebar />
 
-      <div className="min-w-0 flex-1">
-        <main className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-10 pb-28 md:py-14 md:pb-20">
+      {/* Clipped sideways: an entry at the far end of the term table, or its
+          hover card, would otherwise widen the page and let it scroll. */}
+      <div className="min-w-0 flex-1 overflow-x-clip">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto outline-none flex max-w-4xl flex-col gap-10 px-6 py-10 pb-28 md:py-14 md:pb-20">
           <header>
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 pb-4">
               <div className="min-w-0">
@@ -43,7 +56,7 @@ export function AppShell({
                 is set with. */}
             <div
               aria-hidden="true"
-              className="animate-rule-draw h-1 origin-left bg-[linear-gradient(to_bottom,var(--rule-strong)_0_2px,transparent_2px_100%),linear-gradient(to_bottom,transparent_0_3px,var(--rule)_3px_4px)]"
+              className="h-1 bg-[linear-gradient(to_bottom,var(--rule-strong)_0_2px,transparent_2px_100%),linear-gradient(to_bottom,transparent_0_3px,var(--rule)_3px_4px)]"
             />
           </header>
 
