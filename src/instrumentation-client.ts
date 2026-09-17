@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 
-import { scrubEvent } from "@/lib/sentry-scrub";
+import { scrubEvent, scrubTransaction } from "@/lib/sentry-scrub";
 
 /**
  * Browser observability. The DSN is public by design — it ships in this bundle
@@ -12,6 +12,8 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     tracesSampleRate: 1,
     sendDefaultPii: false,
     beforeSend: scrubEvent,
+    // Traces skip beforeSend entirely, and carry the same URLs in more places.
+    beforeSendTransaction: scrubTransaction,
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
   });
 }

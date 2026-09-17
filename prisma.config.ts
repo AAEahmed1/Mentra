@@ -3,6 +3,11 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// An env var set to an empty string (`DIRECT_URL=` in a .env, or a blank
+// value in Vercel) is still defined, so `??` would pick it and hand the CLI an
+// empty URL. Treat blank as unset.
+const present = (value: string | undefined) => value?.trim() || undefined;
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
@@ -13,6 +18,6 @@ export default defineConfig({
     // transaction pooler (port 6543) doesn't support. DIRECT_URL points at the
     // session pooler (5432) for that; DATABASE_URL stays the runtime
     // connection. Locally the two are the same, so fall back.
-    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
+    url: present(process.env["DIRECT_URL"]) ?? present(process.env["DATABASE_URL"]),
   },
 });

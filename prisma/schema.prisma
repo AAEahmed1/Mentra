@@ -68,7 +68,7 @@ model Conversation {
 /// everything the assistant knows about them.
 model Message {
   id        String      @id @default(cuid())
-  /// Total order within a student's conversation. Two rows written in the same
+  /// Total order across all messages, and so within a conversation. Two rows written in the same
   /// call can share a createdAt to the millisecond, which would let an answer
   /// sort above its own question.
   seq       Int         @default(autoincrement())
@@ -81,6 +81,9 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, seq])
+  /// The assistant's hourly turn limit counts a student's recent messages, and
+  /// deleting a student cascades through this column.
+  @@index([userId, createdAt])
   @@map("message")
 }
 
@@ -257,4 +260,23 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+/// Better Auth's rate-limit counters, one row per client IP and auth path.
+///
+/// Kept in the database rather than in memory because each Vercel instance has
+/// its own memory: an attacker spread across warm instances would get a fresh
+/// allowance from every one. Rows are short-lived; Better Auth deletes those
+/// older than the longest window as it goes.
+model RateLimit {
+  id          String @id
+  key         String
+  count       Int
+  /// Milliseconds since the epoch, which is what Better Auth compares against.
+  lastRequest BigInt
+
+  @@unique([key])
+  // Expired rows are pruned by lastRequest on every window reset.
+  @@index([lastRequest])
+  @@map("rate_limit")
 }

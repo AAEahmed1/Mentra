@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 
-import { scrubEvent } from "@/lib/sentry-scrub";
+import { scrubEvent, scrubTransaction } from "@/lib/sentry-scrub";
 
 /**
  * Server and edge observability.
@@ -19,6 +19,8 @@ export function register() {
     // Never attach IP, headers or user identity. See scrubEvent for why.
     sendDefaultPii: false,
     beforeSend: scrubEvent,
+    // Traces skip beforeSend entirely, and carry the same URLs in more places.
+    beforeSendTransaction: scrubTransaction,
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
   });
 }

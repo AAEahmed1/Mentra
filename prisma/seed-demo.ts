@@ -5,6 +5,17 @@
  *   npm run seed:demo -- --email you@example.com
  *   npm run seed:demo -- --email you@example.com --clear
  *
+ * Every run REPLACES the account's terms, courses, work, notes and memories:
+ * they are deleted first (in one transaction), then the demo term is written.
+ * Topping up instead would stack a second copy of everything on the first.
+ * `--clear` stops after the delete. Only point it at an account whose data
+ * you are willing to lose.
+ *
+ * It refuses to run unless DATABASE_URL is on this machine, because the same
+ * .env line that points at a local database can just as easily point at
+ * production. `--allow-remote` overrides that, loudly, for a deliberate seed
+ * of a remote demo database.
+ *
  * It writes through the same service functions the app uses, so anything it
  * creates has passed the same ownership and validation checks as real input.
  *
@@ -28,6 +39,22 @@ import { createCourse } from "../src/lib/services/course";
 import { createTask } from "../src/lib/services/task";
 import { createNote } from "../src/lib/services/note";
 import { createMemory } from "../src/lib/services/memory";
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+/**
+ * The host DATABASE_URL points at, or null when it cannot be read. An
+ * unreadable URL is treated as remote: the guard exists for the case nobody
+ * checked.
+ */
+function databaseHost(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
 
 const DAY = 86_400_000;
 const at = (offsetDays: number) => {
@@ -76,11 +103,33 @@ async function main() {
   const args = process.argv.slice(2);
   const email = args[args.indexOf("--email") + 1];
   const clear = args.includes("--clear");
+  const allowRemote = args.includes("--allow-remote");
 
   if (!args.includes("--email") || !email || email.startsWith("--")) {
     throw new Error(
-      "Pass the account to seed: npm run seed:demo -- --email you@example.com"
+      "Pass the account to seed: npm run seed:demo -- --email you@example.com\n" +
+        "Seeding replaces that account's terms, courses, work, notes and " +
+        "memories; add --clear to only delete them."
     );
+  }
+
+  const host = databaseHost(process.env.DATABASE_URL);
+  if (!host || !LOCAL_HOSTS.has(host)) {
+    if (!allowRemote) {
+      throw new Error(
+        `DATABASE_URL points at ${host ?? "an unreadable or missing host"}, ` +
+          "not this machine. This script deletes the account's data before " +
+          "seeding, so it only runs against a local database. Pass " +
+          "--allow-remote if you really mean to seed a remote one."
+      );
+    }
+    console.warn("");
+    console.warn("!".repeat(72));
+    console.warn(`  --allow-remote: seeding a REMOTE database at ${host ?? "?"}.`);
+    console.warn(`  All course, work, note and memory data for ${email} there`);
+    console.warn("  will be DELETED and replaced. Ctrl+C now if that is wrong.");
+    console.warn("!".repeat(72));
+    console.warn("");
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
@@ -91,12 +140,15 @@ async function main() {
   }
 
   // Always clear first, so re-running refreshes the term rather than stacking
-  // a second copy of it on top of the last one.
-  await prisma.note.deleteMany({ where: { userId: user.id } });
-  await prisma.task.deleteMany({ where: { userId: user.id } });
-  await prisma.memory.deleteMany({ where: { userId: user.id } });
-  await prisma.course.deleteMany({ where: { semester: { userId: user.id } } });
-  await prisma.semester.deleteMany({ where: { userId: user.id } });
+  // a second copy of it on top of the last one. One transaction, so a failure
+  // part-way cannot leave courses whose notes are gone, or the reverse.
+  await prisma.$transaction([
+    prisma.note.deleteMany({ where: { userId: user.id } }),
+    prisma.task.deleteMany({ where: { userId: user.id } }),
+    prisma.memory.deleteMany({ where: { userId: user.id } }),
+    prisma.course.deleteMany({ where: { semester: { userId: user.id } } }),
+    prisma.semester.deleteMany({ where: { userId: user.id } }),
+  ]);
 
   if (clear) {
     console.log(`Cleared all course, work, note and memory data for ${email}.`);
@@ -150,11 +202,12 @@ async function main() {
   }
 
   for (const note of NOTES) {
-    await createNote(user.id, {
+    const created = await createNote(user.id, {
       title: note.title,
       body: note.body,
       courseId: courseIds[note.courseIndex],
     });
+    if (!created.success) throw new Error(`Could not create ${note.title}`);
   }
 
   for (const memory of MEMORIES) {

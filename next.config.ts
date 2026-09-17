@@ -1,8 +1,43 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+/**
+ * Headers every response carries, pages and `/public` files alike.
+ *
+ * There is deliberately no Content-Security-Policy yet. Next's inline
+ * bootstrap scripts need a nonce or hashes, and the Sentry tunnel and any
+ * third-party origins have to be enumerated; a policy guessed at here would
+ * either break the app or allow so much it protects nothing. That is a
+ * decision to make on purpose, not a line to add in passing.
+ */
+const securityHeaders = [
+  // Stops a browser guessing a file's type, so an uploaded or served text file
+  // can never be reinterpreted as script.
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Paths on this app can carry a student's search terms; other sites only
+  // need to know the request came from Mentra, not from which page.
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Nothing legitimately embeds Mentra, so framing is refused outright rather
+  // than left open to clickjacking. Without a CSP this is the only lever.
+  { key: "X-Frame-Options", value: "DENY" },
+  // The app uses none of these, so an injected script cannot ask for them.
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+  },
+  // Two years, subdomains included. Not `preload`: joining the browser preload
+  // list is effectively irreversible and applies to the whole registered
+  // domain, which is not this config's call to make.
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains",
+  },
+];
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
 };
 
 export default withSentryConfig(nextConfig, {
@@ -21,7 +56,9 @@ export default withSentryConfig(nextConfig, {
   // never a broken deploy.
   silent: !process.env.CI,
 
-  // Server-side source maps are deleted after upload rather than shipped.
+  // Browser source maps (everything under .next/static, which is publicly
+  // served) are deleted after upload so the original source is not handed to
+  // anyone who asks. Server maps stay on the server, where they are not served.
   widenClientFileUpload: true,
   sourcemaps: { deleteSourcemapsAfterUpload: true },
 
