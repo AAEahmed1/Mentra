@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { nextCookies } from "better-auth/next-js";
 
 import { prisma } from "@/lib/prisma";
 
@@ -38,4 +39,9 @@ export const auth = betterAuth({
         },
       }
     : {},
+  // Server actions that call auth.api (changing a password replaces the
+  // session) can only set cookies through Next's cookies() API. Without this
+  // plugin the new session cookie is dropped and the student is signed out.
+  // Must stay the last plugin.
+  plugins: [nextCookies()],
 });

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth, hasGoogleAuth } from "@/lib/auth";
+import { hasGoogleAuth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { LandingPage } from "@/components/landing/landing-page";
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
  * way Mentra prints — with the way in at the top.
  */
 export default async function RootPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
 
   if (session?.user) {
     redirect("/dashboard");

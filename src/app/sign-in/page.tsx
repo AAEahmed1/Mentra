@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth, hasGoogleAuth } from "@/lib/auth";
+import { hasGoogleAuth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SignInPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
 
   if (session?.user) {
     redirect("/dashboard");

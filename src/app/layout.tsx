@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Archivo, Bitter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
 import { ThreadSeed } from "@/components/assistant/thread-seed";
 import { listMessagesForConversation } from "@/lib/services/message";
@@ -32,7 +31,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Mounted here rather than per-page so the assistant is reachable from every
   // authenticated screen without each page having to remember to include it.
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
 
   // Read here rather than in the panel so the conversation is already on the
   // page when it opens, instead of appearing a moment later. The panel carries
