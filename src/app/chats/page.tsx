@@ -2,32 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireUserId } from "@/lib/session";
+import { getStudentTime } from "@/lib/student-time";
 import { AppShell } from "@/components/app-shell";
 import { listConversationsForUser } from "@/lib/services/conversation";
 import { startConversationAction } from "@/lib/actions/conversation";
 import { Button } from "@/components/ui/button";
 import { RunningHead } from "@/components/running-head";
+import { updatedLabel } from "@/components/assistant/updated-label";
 
 export const metadata: Metadata = {
   title: "Chats — Mentra",
 };
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-});
-
-function when(date: Date, now: Date): string {
-  const days = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
-  if (days < 1) return "Today";
-  if (days < 2) return "Yesterday";
-  return dateFormatter.format(date);
-}
-
 export default async function ChatsPage() {
   const userId = await requireUserId();
-  const conversations = await listConversationsForUser(userId);
-  const now = new Date();
+  const [conversations, { now, timeZone }] = await Promise.all([
+    listConversationsForUser(userId),
+    getStudentTime(),
+  ]);
 
   return (
     <AppShell
@@ -80,7 +72,7 @@ export default async function ChatsPage() {
                     data-figures
                     className="text-right text-xs text-muted-foreground"
                   >
-                    {when(conversation.updatedAt, now)}
+                    {updatedLabel(conversation.updatedAt, now, timeZone)}
                   </td>
                 </tr>
               ))}

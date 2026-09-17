@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createConversation } from "@/lib/services/conversation";
 import {
   appendMessages,
+  countTurnsSince,
   listMessagesForConversation,
   MAX_STORED_HISTORY,
 } from "@/lib/services/message";
@@ -87,5 +88,72 @@ describe("listMessagesForConversation", () => {
     expect(stored[stored.length - 1].content).toBe(
       `Message ${MAX_STORED_HISTORY + 3}`
     );
+  });
+});
+
+describe("countTurnsSince", () => {
+  const hourAgo = () => new Date(Date.now() - 60 * 60 * 1000);
+
+  test("counts the questions a student asked, not the answers", async () => {
+    await appendMessages(userId, conversationId, [
+      { role: "user", content: "One" },
+      { role: "assistant", content: "Answer" },
+      { role: "user", content: "Two" },
+      { role: "assistant", content: "Answer" },
+    ]);
+
+    const { count, oldest } = await countTurnsSince(userId, hourAgo());
+
+    expect(count).toBe(2);
+    expect(oldest).toBeInstanceOf(Date);
+  });
+
+  test("counts across every conversation, so a new chat doesn't reset it", async () => {
+    const other = await createConversation(userId);
+    await appendMessages(userId, conversationId, [
+      { role: "user", content: "Here" },
+    ]);
+    await appendMessages(userId, other.id, [{ role: "user", content: "There" }]);
+
+    expect((await countTurnsSince(userId, hourAgo())).count).toBe(2);
+  });
+
+  test("leaves out questions from before the window", async () => {
+    await appendMessages(userId, conversationId, [
+      { role: "user", content: "Long ago" },
+    ]);
+    await prisma.message.updateMany({
+      where: { conversationId },
+      data: { createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+    });
+    await appendMessages(userId, conversationId, [
+      { role: "user", content: "Just now" },
+    ]);
+
+    const { count, oldest } = await countTurnsSince(userId, hourAgo());
+
+    expect(count).toBe(1);
+    expect(oldest!.getTime()).toBeGreaterThan(hourAgo().getTime());
+  });
+
+  test("never counts another student's questions", async () => {
+    const other = await prisma.user.create({
+      data: {
+        name: "Other Student",
+        email: `test-message-other-${randomUUID()}@example.com`,
+        emailVerified: true,
+      },
+    });
+    const theirs = await createConversation(other.id);
+    await appendMessages(other.id, theirs.id, [
+      { role: "user", content: "Theirs" },
+    ]);
+
+    expect(await countTurnsSince(userId, hourAgo())).toEqual({
+      count: 0,
+      oldest: null,
+    });
+
+    await prisma.user.delete({ where: { id: other.id } });
   });
 });

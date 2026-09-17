@@ -5,9 +5,8 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "@/lib/session";
 import { AppShell } from "@/components/app-shell";
 import { getConversationForUser } from "@/lib/services/conversation";
-import { deleteConversationAction } from "@/lib/actions/conversation";
-import { Button } from "@/components/ui/button";
 import { AssistantThread } from "@/components/assistant/assistant-thread";
+import { DeleteChatButton } from "@/components/assistant/delete-chat-button";
 import { ThreadSeed } from "@/components/assistant/thread-seed";
 
 export const metadata: Metadata = {
@@ -33,12 +32,7 @@ export default async function ChatPage({ params }: PageProps<"/chats/[id]">) {
           >
             All chats
           </Link>
-          <form action={deleteConversationAction}>
-            <input type="hidden" name="conversationId" value={conversation.id} />
-            <Button type="submit" variant="ghost" size="sm">
-              Delete
-            </Button>
-          </form>
+          <DeleteChatButton conversationId={conversation.id} />
         </div>
       }
     >
@@ -50,6 +44,7 @@ export default async function ChatPage({ params }: PageProps<"/chats/[id]">) {
       <ThreadSeed
         conversationId={conversation.id}
         messages={conversation.messages.map((message) => ({
+          id: message.id,
           role: message.role,
           content: message.content,
         }))}

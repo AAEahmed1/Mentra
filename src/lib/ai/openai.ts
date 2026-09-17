@@ -5,6 +5,7 @@ import type {
 } from "openai/resources/chat/completions";
 
 import { toolDefinitions } from "@/lib/ai/tools";
+import { MAX_COMPLETION_TOKENS } from "@/lib/ai/limits";
 import type { ChatCompleter, ChatMessage } from "@/lib/ai/chat";
 
 const DEFAULT_MODEL = "gpt-5.6-terra";
@@ -60,11 +61,16 @@ export function createOpenAiCompleter(): ChatCompleter {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
-  return async (messages) => {
+  return async (messages, { allowTools }) => {
     const completion = await client.chat.completions.create({
       model,
       messages: toOpenAiMessages(messages),
+      // Tools stay attached on every call, because the thread already holds
+      // tool calls and their results. On the last call of a turn tool_choice
+      // "none" forbids calling another, so the model has to answer in words.
       tools,
+      ...(allowTools ? {} : { tool_choice: "none" as const }),
+      max_completion_tokens: MAX_COMPLETION_TOKENS,
       // Must stay "none": this endpoint rejects any other value when function
       // tools are attached ("Function tools with reasoning_effort are not
       // supported for gpt-5.6-terra in /v1/chat/completions"). Reasoning plus

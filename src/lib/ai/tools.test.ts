@@ -318,3 +318,108 @@ describe("validateToolCall — correcting what was already filed", () => {
     expect(validateToolCall("delete_task", { taskId: "" }).ok).toBe(false);
   });
 });
+
+describe("validateToolCall — dates have to be real days", () => {
+  test.each(["2026-09-03", "2028-02-29"])("accepts %s as a due date", (dueDate) => {
+    expect(validateToolCall("create_task", { title: "Essay", dueDate }).ok).toBe(
+      true
+    );
+  });
+
+  test.each([
+    ["Friday", "YYYY-MM-DD"],
+    ["2026-9-3", "YYYY-MM-DD"],
+    ["2026-09-03T10:00:00Z", "YYYY-MM-DD"],
+    ["2026-02-30", "not a real calendar date"],
+    ["2027-02-29", "not a real calendar date"],
+    ["2026-13-01", "not a real calendar date"],
+  ])(
+    "refuses %s with a message the model can act on",
+    (dueDate, expected) => {
+      const result = validateToolCall("create_task", { title: "Essay", dueDate });
+
+      expect(result.ok).toBe(false);
+      expect(!result.ok && result.error).toContain("dueDate");
+      expect(!result.ok && result.error).toContain(expected);
+    }
+  );
+
+  test("refuses an impossible date when changing a task, too", () => {
+    const result = validateToolCall("update_task", {
+      taskId: "task_1",
+      dueDate: "2026-04-31",
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  test("gives one message for a date in the wrong shape, not two", () => {
+    const result = validateToolCall("create_task", {
+      title: "Essay",
+      dueDate: "next week",
+    });
+
+    expect(!result.ok && result.error).not.toContain("not a real calendar date");
+  });
+
+  test("refuses a term whose dates are not real days", () => {
+    const result = validateToolCall("create_semester", {
+      name: "Autumn 2026",
+      startDate: "2026-09-01",
+      endDate: "December",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toContain("endDate");
+  });
+
+  test("refuses a term that ends before it starts", () => {
+    const result = validateToolCall("create_semester", {
+      name: "Autumn 2026",
+      startDate: "2026-12-18",
+      endDate: "2026-09-01",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toContain("endDate: must be after startDate");
+  });
+
+  test("refuses a term that ends the day it starts", () => {
+    const result = validateToolCall("create_semester", {
+      name: "Autumn 2026",
+      startDate: "2026-09-01",
+      endDate: "2026-09-01",
+    });
+
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe("validateToolCall — a task can't be renamed to nothing", () => {
+  test("refuses update_task with an empty title", () => {
+    expect(
+      validateToolCall("update_task", { taskId: "task_1", title: "" }).ok
+    ).toBe(false);
+  });
+
+  test("still accepts update_task without a title at all", () => {
+    expect(
+      validateToolCall("update_task", { taskId: "task_1", priority: "high" }).ok
+    ).toBe(true);
+  });
+});
+
+describe("toolDefinitions — saying what the code does", () => {
+  const describe_ = (name: string) =>
+    toolDefinitions.find((tool) => tool.name === name)?.description ?? "";
+
+  test("get_courses doesn't claim to be limited to the current term", () => {
+    expect(describe_("get_courses")).not.toMatch(/current semester/i);
+    expect(describe_("get_courses")).toMatch(/all of their terms/i);
+  });
+
+  test("create_task agrees with the prompt about filing work mentioned in passing", () => {
+    expect(describe_("create_task")).not.toMatch(/only call this when/i);
+    expect(describe_("create_task")).toMatch(/in passing/i);
+  });
+});

@@ -6,7 +6,14 @@ import { createSemester } from "@/lib/services/semester";
 import { createCourse } from "@/lib/services/course";
 import { createTask } from "@/lib/services/task";
 import { createNote } from "@/lib/services/note";
-import { executeToolCall } from "@/lib/ai/execute";
+import { createMemory } from "@/lib/services/memory";
+import {
+  executeToolCall,
+  MAX_MEMORY_RESULTS,
+  MAX_NOTE_BODY_LENGTH,
+  MAX_NOTE_RESULTS,
+  MAX_TASK_RESULTS,
+} from "@/lib/ai/execute";
 import { validateToolCall, type ValidatedToolCall } from "@/lib/ai/tools";
 
 /** Runs a call the way the assistant would: validated first, then executed. */
@@ -59,6 +66,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  await prisma.memory.deleteMany({ where: { userId } });
   await prisma.note.deleteMany({ where: { userId } });
   await prisma.task.deleteMany({ where: { userId } });
   await prisma.course.deleteMany({ where: { semester: { userId } } });
@@ -81,9 +89,9 @@ describe("search_notes — the assistant answering 'does this work have notes?'"
       taskId: undefined,
     });
 
-    const notes = (await run(userId, "search_notes", { taskId })) as {
-      title: string;
-    }[];
+    const { notes } = (await run(userId, "search_notes", { taskId })) as {
+      notes: { title: string }[];
+    };
 
     expect(notes.map((note) => note.title)).toEqual(["Subnetting refresher"]);
   });
@@ -96,9 +104,11 @@ describe("search_notes — the assistant answering 'does this work have notes?'"
       taskId,
     });
 
-    const [note] = (await run(userId, "search_notes", {})) as {
-      taskId: string | null;
-    }[];
+    const {
+      notes: [note],
+    } = (await run(userId, "search_notes", {})) as {
+      notes: { taskId: string | null }[];
+    };
 
     // Without this the assistant cannot answer "are there notes on this?" at
     // all — it can only see notes, never what they hang off.
@@ -113,9 +123,9 @@ describe("search_notes — the assistant answering 'does this work have notes?'"
       taskId,
     });
 
-    const notes = (await run(userId, "search_notes", {
+    const { notes } = (await run(userId, "search_notes", {
       query: "usable hosts",
-    })) as unknown[];
+    })) as { notes: unknown[] };
 
     expect(notes).toHaveLength(1);
   });
@@ -123,9 +133,11 @@ describe("search_notes — the assistant answering 'does this work have notes?'"
 
 describe("get_tasks — naming the course rather than only its id", () => {
   test("gives the course name, so the assistant need not join ids itself", async () => {
-    const [task] = (await run(userId, "get_tasks", {})) as {
-      courseName: string | null;
-    }[];
+    const {
+      tasks: [task],
+    } = (await run(userId, "get_tasks", {})) as {
+      tasks: { courseName: string | null }[];
+    };
 
     expect(task.courseName).toBe("Network Defence");
   });
@@ -218,5 +230,109 @@ describe("correcting what the assistant already filed", () => {
     });
 
     expect(result).toMatchObject({ updated: false });
+  });
+});
+
+describe("get_courses — telling terms apart", () => {
+  test("names the term each course runs in", async () => {
+    const [course] = (await run(userId, "get_courses", {})) as {
+      semesterName: string | null;
+    }[];
+
+    expect(course.semesterName).toBe("Autumn 2026");
+  });
+});
+
+describe("read tools — bounded results", () => {
+  test("search_notes returns at most the newest notes, and says it cut the list", async () => {
+    for (let index = 0; index < MAX_NOTE_RESULTS + 3; index += 1) {
+      await createNote(userId, {
+        title: `Note ${index}`,
+        body: "Body.",
+        courseId: undefined,
+        taskId: undefined,
+      });
+    }
+
+    const result = (await run(userId, "search_notes", {})) as {
+      notes: { title: string }[];
+      total: number;
+      truncated: boolean;
+      note?: string;
+    };
+
+    expect(result.notes).toHaveLength(MAX_NOTE_RESULTS);
+    expect(result.total).toBe(MAX_NOTE_RESULTS + 3);
+    expect(result.truncated).toBe(true);
+    expect(result.note).toContain(`Showing ${MAX_NOTE_RESULTS} of`);
+  });
+
+  test("search_notes says nothing was cut when nothing was", async () => {
+    const result = (await run(userId, "search_notes", {})) as {
+      truncated: boolean;
+      note?: string;
+    };
+
+    expect(result.truncated).toBe(false);
+    expect(result.note).toBeUndefined();
+  });
+
+  test("search_notes shortens a very long body and marks that it did", async () => {
+    await createNote(userId, {
+      title: "Long",
+      body: "x".repeat(MAX_NOTE_BODY_LENGTH + 500),
+      courseId: undefined,
+      taskId: undefined,
+    });
+
+    const {
+      notes: [note],
+    } = (await run(userId, "search_notes", {})) as {
+      notes: { body: string }[];
+    };
+
+    expect(note.body.startsWith("x".repeat(MAX_NOTE_BODY_LENGTH))).toBe(true);
+    expect(note.body).toContain("[shortened: 500 more characters");
+  });
+
+  test("get_tasks caps a long list and says how to see the rest", async () => {
+    await prisma.task.createMany({
+      data: Array.from({ length: MAX_TASK_RESULTS }, (_, index) => ({
+        userId,
+        title: `Extra ${index}`,
+      })),
+    });
+
+    const result = (await run(userId, "get_tasks", {})) as {
+      tasks: unknown[];
+      total: number;
+      truncated: boolean;
+      note?: string;
+    };
+
+    expect(result.tasks).toHaveLength(MAX_TASK_RESULTS);
+    expect(result.total).toBe(MAX_TASK_RESULTS + 1);
+    expect(result.truncated).toBe(true);
+    expect(result.note).toMatch(/status or courseId/);
+  });
+
+  test("search_memory returns every memory below its cap", async () => {
+    await createMemory(userId, {
+      content: "Works best early",
+      type: "behavioral",
+      source: "explicit",
+    });
+
+    const result = (await run(userId, "search_memory", {})) as {
+      memories: { content: string }[];
+      total: number;
+      truncated: boolean;
+    };
+
+    expect(result.memories.map((memory) => memory.content)).toEqual([
+      "Works best early",
+    ]);
+    expect(result).toMatchObject({ total: 1, truncated: false });
+    expect(MAX_MEMORY_RESULTS).toBeGreaterThan(40);
   });
 });

@@ -6,6 +6,7 @@ import {
   createMemory,
   deleteMemory,
   listMemoriesForUser,
+  listRecentMemoriesForUser,
 } from "@/lib/services/memory";
 
 let userId: string;
@@ -109,5 +110,29 @@ describe("deleteMemory", () => {
 
     await prisma.memory.deleteMany({ where: { userId: otherUser.id } });
     await prisma.user.delete({ where: { id: otherUser.id } });
+  });
+});
+
+describe("listRecentMemoriesForUser", () => {
+  test("loads only as many as asked for, and says how many there are", async () => {
+    for (let index = 0; index < 5; index += 1) {
+      await createMemory(userId, {
+        content: `Fact ${index}`,
+        type: "profile",
+        source: "inferred",
+      });
+    }
+
+    const { memories, total } = await listRecentMemoriesForUser(userId, 3);
+
+    expect(memories).toHaveLength(3);
+    expect(total).toBe(5);
+  });
+
+  test("returns nothing, and a total of zero, for a student with no memories", async () => {
+    expect(await listRecentMemoriesForUser(userId, 3)).toEqual({
+      memories: [],
+      total: 0,
+    });
   });
 });

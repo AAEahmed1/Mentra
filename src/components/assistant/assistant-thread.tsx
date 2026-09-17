@@ -79,9 +79,9 @@ export function AssistantThread({ variant }: { variant: "panel" | "page" }) {
                 : "flex max-w-[70ch] flex-col gap-5"
             }
           >
-            {messages.map((message, index) => (
+            {messages.map((message) => (
               <li
-                key={index}
+                key={message.id}
                 // A turn arrives rather than appearing: the reply is the one
                 // thing on this surface that happens, so it is the one thing
                 // that moves.

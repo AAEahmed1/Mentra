@@ -13,10 +13,56 @@ import {
   searchNotesForUser,
   updateNote,
 } from "@/lib/services/note";
-import { createMemory, listMemoriesForUser } from "@/lib/services/memory";
+import {
+  createMemory,
+  listRecentMemoriesForUser,
+} from "@/lib/services/memory";
 import { rankTasks } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
 import type { ValidatedToolCall } from "@/lib/ai/tools";
+
+/**
+ * Ceilings on what a read tool hands back. Every result is sent to OpenAI and
+ * then again with each later round of the turn, so a student with years of
+ * notes would otherwise make every lookup slower and dearer than the last.
+ * When a list is cut short the result says so, and says how to narrow it.
+ */
+export const MAX_NOTE_RESULTS = 20;
+/** Longer bodies are cut and marked; the whole note is on the Notes page. */
+export const MAX_NOTE_BODY_LENGTH = 2000;
+export const MAX_TASK_RESULTS = 50;
+/** Far past the forty in the prompt; search_memory is for the rest of those. */
+export const MAX_MEMORY_RESULTS = 200;
+
+/**
+ * A capped list, in one shape for every tool that caps: the items, how many
+ * there were in all, and — only when some were left out — a sentence telling
+ * the model so and what to do about it.
+ */
+function capped<T>(
+  items: T[],
+  max: number,
+  total: number,
+  howToNarrow: string
+): { items: T[]; total: number; truncated: boolean; note?: string } {
+  const shown = items.slice(0, max);
+  if (total <= shown.length) {
+    return { items: shown, total, truncated: false };
+  }
+  return {
+    items: shown,
+    total,
+    truncated: true,
+    note: `Showing ${shown.length} of ${total}. ${howToNarrow}`,
+  };
+}
+
+function shortenBody(body: string): string {
+  if (body.length <= MAX_NOTE_BODY_LENGTH) return body;
+  return `${body.slice(0, MAX_NOTE_BODY_LENGTH)} [shortened: ${
+    body.length - MAX_NOTE_BODY_LENGTH
+  } more characters not shown. The whole note is on the Notes page.]`;
+}
 
 /**
  * Runs a tool call the model requested, always scoped to the signed-in user.
@@ -45,13 +91,21 @@ export async function executeToolCall(
 
   switch (call.name) {
     case "get_courses": {
-      const courses = await listCoursesForUser(userId);
+      const [courses, semesters] = await Promise.all([
+        listCoursesForUser(userId),
+        listSemestersForUser(userId),
+      ]);
+      // Courses from every term come back, so each carries its term: without
+      // it, last year's course reads the same as this year's.
+      const terms = new Map(semesters.map((term) => [term.id, term.name]));
       return courses.map((course) => ({
         id: course.id,
         name: course.name,
         code: course.code,
         professor: course.professor,
         credits: course.credits,
+        semesterId: course.semesterId,
+        semesterName: terms.get(course.semesterId) ?? null,
       }));
     }
 
@@ -60,14 +114,25 @@ export async function executeToolCall(
         listTasksForUser(userId),
         courseNames(),
       ]);
-      return tasks
+      const matching = tasks
         .filter((task) =>
           call.args.status ? task.status === call.args.status : true
         )
         .filter((task) =>
           call.args.courseId ? task.courseId === call.args.courseId : true
-        )
-        .map((task) => ({
+        );
+
+      // Newest first, as the service orders them, so what is cut is the work
+      // entered longest ago.
+      const { items, ...rest } = capped(
+        matching,
+        MAX_TASK_RESULTS,
+        matching.length,
+        "These are the most recently added. Filter by status or courseId to see the rest."
+      );
+
+      return {
+        tasks: items.map((task) => ({
           id: task.id,
           title: task.title,
           courseId: task.courseId,
@@ -79,7 +144,9 @@ export async function executeToolCall(
           status: task.status,
           type: task.type,
           estimatedDuration: task.estimatedDuration,
-        }));
+        })),
+        ...rest,
+      };
     }
 
     case "get_deadlines": {
@@ -162,26 +229,52 @@ export async function executeToolCall(
         ? found.filter((note) => note.taskId === call.args.taskId)
         : found;
 
-      return notes.map((note) => ({
-        id: note.id,
-        title: note.title,
-        body: note.body,
-        courseId: note.courseId,
-        courseName: note.courseId ? (names.get(note.courseId) ?? null) : null,
-        // Without this the assistant can see notes but never what they hang
-        // off, so it answers "no notes" to work that plainly has some.
-        taskId: note.taskId,
-      }));
+      // Newest first, as the service orders them.
+      const { items, ...rest } = capped(
+        notes,
+        MAX_NOTE_RESULTS,
+        notes.length,
+        "These are the newest. Search with a more specific query, or pass taskId, to find older ones."
+      );
+
+      return {
+        notes: items.map((note) => ({
+          id: note.id,
+          title: note.title,
+          body: shortenBody(note.body),
+          courseId: note.courseId,
+          courseName: note.courseId
+            ? (names.get(note.courseId) ?? null)
+            : null,
+          // Without this the assistant can see notes but never what they hang
+          // off, so it answers "no notes" to work that plainly has some.
+          taskId: note.taskId,
+        })),
+        ...rest,
+      };
     }
 
     case "search_memory": {
-      const memories = await listMemoriesForUser(userId);
-      return memories.map((memory) => ({
-        id: memory.id,
-        content: memory.content,
-        type: memory.type,
-        source: memory.source,
-      }));
+      const { memories, total } = await listRecentMemoriesForUser(
+        userId,
+        MAX_MEMORY_RESULTS
+      );
+      const { items, ...rest } = capped(
+        memories,
+        MAX_MEMORY_RESULTS,
+        total,
+        "These are the most recent. The rest are on the What Mentra knows page."
+      );
+
+      return {
+        memories: items.map((memory) => ({
+          id: memory.id,
+          content: memory.content,
+          type: memory.type,
+          source: memory.source,
+        })),
+        ...rest,
+      };
     }
 
     case "create_note": {

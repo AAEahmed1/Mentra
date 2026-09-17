@@ -73,3 +73,21 @@ export async function listMessagesForConversation(
 
   return newestFirst.reverse();
 }
+
+/**
+ * How many turns a student has started since `since`, and when the oldest of
+ * them was — which is when the count next goes down. Counted across all their
+ * conversations, so starting a new chat doesn't reset it.
+ */
+export async function countTurnsSince(
+  userId: string,
+  since: Date
+): Promise<{ count: number; oldest: Date | null }> {
+  const { _count, _min } = await prisma.message.aggregate({
+    where: { userId, role: "user", createdAt: { gte: since } },
+    _count: { _all: true },
+    _min: { createdAt: true },
+  });
+
+  return { count: _count._all, oldest: _min.createdAt };
+}

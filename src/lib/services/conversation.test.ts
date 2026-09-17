@@ -8,6 +8,7 @@ import {
   getConversationForUser,
   latestConversationForUser,
   listConversationsForUser,
+  startConversation,
 } from "@/lib/services/conversation";
 import { appendMessages } from "@/lib/services/message";
 
@@ -185,5 +186,46 @@ describe("deleteConversation", () => {
     expect(
       await prisma.conversation.findUnique({ where: { id: theirs.id } })
     ).not.toBeNull();
+  });
+});
+
+describe("startConversation", () => {
+  test("makes a thread when the student has none", async () => {
+    const conversation = await startConversation(userId);
+
+    expect(conversation).toMatchObject({ userId, title: null });
+  });
+
+  test("hands back an unused thread rather than piling up another", async () => {
+    const first = await startConversation(userId);
+    const second = await startConversation(userId);
+
+    expect(second.id).toBe(first.id);
+    expect(await prisma.conversation.count({ where: { userId } })).toBe(1);
+  });
+
+  test("makes a new thread once the last one has been spoken into", async () => {
+    const used = await startConversation(userId);
+    await appendMessages(userId, used.id, [{ role: "user", content: "Hello" }]);
+
+    const next = await startConversation(userId);
+
+    expect(next.id).not.toBe(used.id);
+  });
+
+  test("makes the reused thread the latest, as a new one would be", async () => {
+    const empty = await createConversation(userId);
+    const used = await createConversation(userId);
+    await appendMessages(userId, used.id, [{ role: "user", content: "Hello" }]);
+
+    await startConversation(userId);
+
+    expect((await latestConversationForUser(userId))?.id).toBe(empty.id);
+  });
+
+  test("never reuses another student's empty thread", async () => {
+    const theirs = await createConversation(otherUserId);
+
+    expect((await startConversation(userId)).id).not.toBe(theirs.id);
   });
 });

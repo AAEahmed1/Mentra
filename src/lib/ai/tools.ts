@@ -31,6 +31,29 @@ const memorySource = z.enum(["explicit", "inferred"]);
 
 const empty = z.object({});
 
+/** True for a YYYY-MM-DD string naming a day that exists on the calendar. */
+export function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  // An impossible day such as 2026-02-30 rolls over into March rather than
+  // failing, so it only counts if it reads back as what was written.
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+/**
+ * A calendar date the model wrote. Checked here rather than left to `new Date`
+ * in execute.ts, where a bad one throws and reaches the model as "That lookup
+ * failed" — which tells it nothing it can correct.
+ */
+const calendarDate = z
+  .string()
+  // abort: a date in the wrong shape needs one message, not two.
+  .regex(/^\d{4}-\d{2}-\d{2}$/, {
+    error: "must be a date written as YYYY-MM-DD",
+    abort: true,
+  })
+  .refine(isCalendarDate, "is not a real calendar date");
+
 const toolSchemas = {
   get_courses: empty,
   get_tasks: z.object({
@@ -43,7 +66,7 @@ const toolSchemas = {
   create_task: z.object({
     title: z.string().min(1),
     description: z.string().optional(),
-    dueDate: z.string().optional(),
+    dueDate: calendarDate.optional(),
     priority: taskPriority.optional(),
     estimatedDuration: z.number().int().nonnegative().optional(),
     type: taskType.optional(),
@@ -51,8 +74,8 @@ const toolSchemas = {
   }),
   update_task: z.object({
     taskId: z.string().min(1),
-    title: z.string().optional(),
-    dueDate: z.string().optional(),
+    title: z.string().min(1).optional(),
+    dueDate: calendarDate.optional(),
     priority: taskPriority.optional(),
     estimatedDuration: z.number().int().nonnegative().optional(),
     status: taskStatus.optional(),
@@ -97,11 +120,17 @@ const toolSchemas = {
     professor: z.string().optional(),
     credits: z.number().int().nonnegative().optional(),
   }),
-  create_semester: z.object({
-    name: z.string().min(1),
-    startDate: z.string().min(1),
-    endDate: z.string().min(1),
-  }),
+  create_semester: z
+    .object({
+      name: z.string().min(1),
+      startDate: calendarDate,
+      endDate: calendarDate,
+    })
+    // Both are YYYY-MM-DD by now, so comparing the strings compares the days.
+    .refine((term) => term.endDate > term.startDate, {
+      message: "must be after startDate",
+      path: ["endDate"],
+    }),
   list_semesters: empty,
 } as const;
 
@@ -134,13 +163,13 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "get_courses",
     description:
-      "List the student's courses for the current semester, with code, professor and credits.",
+      "List every course the student has, across all of their terms, with code, professor, credits and the term each one runs in.",
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "get_tasks",
     description:
-      "List the student's tasks, assignments and exams. Optionally filter by status or course.",
+      "List the student's tasks, assignments and exams, newest first. Optionally filter by status or course. Long lists are cut short, and the result says so; filter to see the rest.",
     parameters: {
       type: "object",
       properties: {
@@ -167,7 +196,7 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "create_task",
     description:
-      "Create a task, assignment or exam for the student. Only call this when the student asks for something to be added.",
+      "Create a task, assignment or exam for the student. Call this when they ask for one, and also when they mention a piece of work in passing, then say what you recorded. Fill in only the details they gave.",
     parameters: {
       type: "object",
       properties: {
@@ -220,7 +249,7 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "search_notes",
     description:
-      "Read the student's notes. Pass taskId to get exactly the notes attached to one piece of work — use this to answer whether something has notes. Pass a query to search title and body by keyword. With neither, returns all of them.",
+      "Read the student's notes. Pass taskId to get exactly the notes attached to one piece of work — use this to answer whether something has notes. Pass a query to search title and body by keyword. With neither, returns the newest. At most 20 notes come back, and very long bodies are shortened; the result says when either happened.",
     parameters: {
       type: "object",
       properties: {
@@ -273,7 +302,7 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "update_note",
     description:
-      "Correct a note that is already written: its title, its body, or the course and piece of work it is filed under. Only what you name changes. Get the id from search_notes first.",
+      "Correct a note that is already written: its title, its body, or the course and piece of work it is filed under. Only what you name changes. Get the id from search_notes first. If search_notes marked the body as shortened, do not replace the body: you have not seen all of it.",
     parameters: {
       type: "object",
       properties: {
