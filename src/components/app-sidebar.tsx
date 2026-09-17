@@ -19,6 +19,7 @@ const SECTIONS = [
   { href: "/notes", label: "Notes", icon: "notes" },
   { href: "/chats", label: "Chats", icon: "chats" },
   { href: "/privacy", label: "What Mentra knows", icon: "memory" },
+  { href: "/profile", label: "Profile", icon: "profile" },
 ] as const;
 
 /**
@@ -62,6 +63,12 @@ function SectionIcon({ name }: { name: (typeof SECTIONS)[number]["icon"] }) {
       <>
         <circle cx="9" cy="9" r="6" />
         <path d="M9 5.5v3.5l2.5 1.5" />
+      </>
+    ),
+    profile: (
+      <>
+        <circle cx="9" cy="6.5" r="3" />
+        <path d="M3.5 15.5a5.5 5.5 0 0 1 11 0" />
       </>
     ),
   };
