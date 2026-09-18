@@ -102,6 +102,7 @@ A clock `Date` is only for comparing and displaying days and hours. Never store 
 | `countdown(days)` | `due-label.ts` | `{ figure, word }` for the big number on today's entry: "4 / days over", "0 / due today", "5 / days left", "— / no date" |
 | `greetingForHour(hour)` | `greeting.ts` | "Good night" before 05:00, "Good morning" before 12:00, "Good afternoon" before 18:00, otherwise "Good evening" |
 | `toWorkOptions(tasks, courseNames, now)` | `work-options.ts` | The "About a piece of work" picker on the Notes page: open work only, soonest first, labelled like "Clinical Pharmacology · due tomorrow" |
+| `sortCourses(courses, sort)`, `parseCourseSort(value)` | `course-sort.ts` | The Courses page order: name or code A to Z (numbers in order, so NURS 285 before NURS 302), or credits highest first; missing values last, ties by name. Anything but `name`, `code` or `credits` in `?sort=` means name |
 | `buildSampleTerm(now)` | `landing-sample.ts` | The landing page's example term: five architecture courses and eight pieces of work dated relative to today, ranked with the real engine |
 
 The greeting uses the hour on the student's clock.

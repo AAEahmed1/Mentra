@@ -18,10 +18,9 @@ export function DeleteSemesterButton({ semesterId }: { semesterId: string }) {
 
   return (
     /*
-      Revealed on hover or keyboard focus at md and above, and always present
-      below it where there is no hover. This is the same disclosure every row
-      action uses: destruction is stated when reached for, not shouted from
-      the top of the page next to the term's own name.
+      Revealed on hover or keyboard focus within the term where there is a
+      mouse, and always present on touch screens. This is the same disclosure
+      every row action uses: destruction is stated when reached for.
     */
     <form
       action={formAction}

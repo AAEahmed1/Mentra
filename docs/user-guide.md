@@ -56,6 +56,8 @@ A dark theme is available everywhere:
 - **Add a term** with a name and start and end dates. The end must be after the start.
 - **Add a course** to a term with a name and, optionally, a code, professor and credits.
 - **Edit** a course in place, or **Remove** it after confirming. Work and notes filed under a removed course are kept, just no longer filed under it.
+- **Sort** the courses in every term by name, code or credits with the **Sort by** control at the top. Credits puts the heaviest courses first; courses without a code or credits go last. The choice stays in the page address, so it survives a reload.
+- **Collapse a term** by clicking its heading. The heading still shows how many courses and credits it holds. Terms that have already ended start collapsed.
 - **Delete a term** once it has no courses left. Terms cannot be renamed yet.
 
 ## Work

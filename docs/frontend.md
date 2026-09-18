@@ -21,7 +21,7 @@ All routes use the App Router under `src/app/`. Pages are server components unle
 | `/sign-up` | No | Name, email and password, plus Google. A new account, email or Google, continues to `/onboarding`. |
 | `/onboarding` | Yes | Optional program and institution. Redirects to `/dashboard` once a program is set. Continue and Skip both go to `/courses`. |
 | `/dashboard` | Yes | "Today": greeting, term timeline, time selector, today's entry and the ranked list. Reads `?minutes=`. |
-| `/courses` | Yes | Terms with their courses; add, edit and remove courses; add and delete terms. |
+| `/courses` | Yes | Terms with their courses; add, edit and remove courses; add and delete terms. Reads `?sort=name\|code\|credits`. Each term is a collapsible `<details>`; terms that have ended start collapsed. |
 | `/tasks` | Yes | "Work": every task with complete, edit, remove and attached notes; add work. |
 | `/notes` | Yes | Notes with search (`?q=`), edit and remove; add a note. |
 | `/chats` | Yes | List of assistant conversations; New chat. |
@@ -79,7 +79,7 @@ The frame of every signed-in page: a **Skip to content** link (visible when focu
 | (top level) | `AppShell`, `AppSidebar` (client), `ThemeProvider` (client), `ThemeToggle` (client), `TimeZoneSync` (client), `ConfirmAction` (client), `RunningHead`, `StateLamp`, `DurationBar`, `TimeAvailable`, `TermScore`, `filed-row.tsx` helpers | Shared building blocks |
 | `auth/` | `AuthShell`, `SignInForm`, `SignUpForm`, `GoogleSignInButton`, `SignOutButton` | Forms are client components calling the Better Auth client |
 | `onboarding/` | `OnboardingForm` | |
-| `courses/` | `CourseRow`, `CreateCourseForm`, `CreateSemesterForm`, `DeleteCourseButton`, `DeleteSemesterButton` | |
+| `courses/` | `CourseRow`, `CourseSortControl`, `CreateCourseForm`, `CreateSemesterForm`, `DeleteCourseButton`, `DeleteSemesterButton` | |
 | `tasks/` | `TaskRow`, `CreateTaskForm`, `QuickNoteForm` | |
 | `notes/` | `NoteRow`, `CreateNoteForm` | |
 | `privacy/` | `MemoryRow`, `CreateMemoryForm`, `DeleteAccountForm` | |
