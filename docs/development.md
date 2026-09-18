@@ -8,7 +8,6 @@ How to run Mentra locally, test it, and change it safely.
 - [Tests](#tests)
 - [Demo data](#demo-data)
 - [Working on the code](#working-on-the-code)
-- [Repository extras](#repository-extras)
 
 ## Prerequisites
 
@@ -143,7 +142,7 @@ Fills an **existing** account with a nursing student's term: one semester, five 
 
 - **Scope every query to the student.** Services take `userId` from the session and filter by it. Never accept a user id from a form, URL or the model.
 - **Enable row level security on new tables.** Prisma won't add it. Add `ALTER TABLE "<table>" ENABLE ROW LEVEL SECURITY;` to the migration; `rls.test.ts` fails otherwise. See [database.md](database.md#adding-a-migration).
-- **Keep `ASSISTANT.md` current.** Any change under `src/lib/ai/`, or giving the assistant access to a new service, updates [ASSISTANT.md](../ASSISTANT.md) in the same commit ([AGENTS.md](../AGENTS.md)).
+- **Keep `ASSISTANT.md` current.** Any change under `src/lib/ai/`, or giving the assistant access to a new service, updates [ASSISTANT.md](../ASSISTANT.md) in the same commit.
 - **Read the bundled Next.js docs.** This project uses Next.js 16, whose APIs differ from older versions. The docs for the installed version are in `node_modules/next/dist/docs/`.
 - **Follow the design system.** Use the tokens and rules in [DESIGN.md](../DESIGN.md).
 - **Get the time from `getStudentTime()`** in pages and routes and pass `now` down, instead of calling `new Date()` in helpers or client components. See [domain-logic.md](domain-logic.md#dates-and-time-zones).
@@ -170,16 +169,3 @@ npm run build
 ```
 
 Then run the app and exercise the change in the browser.
-
-## Repository extras
-
-These folders are committed but not needed to build or run the app:
-
-| Path | What it is |
-| --- | --- |
-| `.agents/skills/`, `.claude/skills/`, `.windsurf/skills/` | Prisma skills for AI coding agents, managed by `skills-lock.json`. The `.claude` and `.windsurf` entries link to `.agents`. |
-| `.claude/launch.json` | Preview launch configurations for Claude Code (`mentra-dev`, and `mentra-local-prod`, which serves a production build against a local database). |
-| `.impeccable/`, `.hallmark/` | State from the design tools used to build the interface. `DESIGN.md` and `PRODUCT.md` are their context files. |
-| `.scratch/mentra-v0/issues/` | The original v0 tickets, all delivered. Later work has no tickets, and some ticket details are out of date. |
-| `plan.md` | The original product plan and staged roadmap. Its stack table predates some decisions (for example the OpenAI model). |
-| `docs/screenshots/` | Screenshots used by the README and the user guide. |

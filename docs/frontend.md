@@ -148,7 +148,7 @@ What is in place:
 - Inputs use 16px text on phones to stop iOS zooming.
 - Reduced motion is respected.
 - A skip link, a dialog-like phone drawer, row buttons named after their row, and a confirmation step before anything is removed.
-- The assistant panel closes on Escape and moves focus in and out, but is not a modal; see [known-issues.md](known-issues.md#should-the-assistant-panel-be-a-dialog).
+- The assistant panel closes on Escape and moves focus in and out; it is deliberately not a modal, so the page behind it stays usable.
 
 ## Responsive behaviour
 

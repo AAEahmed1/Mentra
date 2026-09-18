@@ -11,7 +11,6 @@ How Mentra protects student data, what leaves the app, and the known gaps. Mentr
 - [Data that leaves the app](#data-that-leaves-the-app)
 - [Student controls](#student-controls)
 - [Secrets](#secrets)
-- [Known gaps](#known-gaps)
 - [Reporting a vulnerability](#reporting-a-vulnerability)
 
 ## Authentication and sessions
@@ -44,7 +43,7 @@ Integration tests cover refusals across two students for each service.
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), browsing-topics=()` | Mentra needs none of these |
 | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains` | Browsers only ever connect over HTTPS |
 
-There is no Content-Security-Policy yet; see [known-issues.md](known-issues.md#content-security-policy).
+A Content-Security-Policy is not set yet; it needs nonces for Next.js's inline scripts and room for the Sentry tunnel.
 
 ## Database exposure
 
@@ -102,13 +101,6 @@ Data export is not implemented.
 - Production secrets live in Vercel's environment variables.
 - `NEXT_PUBLIC_SENTRY_DSN` is public by design. Nothing else should use the `NEXT_PUBLIC_` prefix, because those values are bundled into browser code.
 - Use a different `BETTER_AUTH_SECRET` in each environment. Rotating it signs everyone out.
-
-## Known gaps
-
-- No email verification and no password reset.
-- No Content Security Policy.
-- Rate limits are per IP address, so a shared network can reach them sooner, and the Profile page's password form is not rate limited.
-- More detail is in [known-issues.md](known-issues.md).
 
 ## Reporting a vulnerability
 

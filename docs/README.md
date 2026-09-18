@@ -13,11 +13,7 @@
 | [Development](development.md) | Local setup, scripts, tests, demo data and contribution rules |
 | [Deployment](deployment.md) | Vercel and Supabase, migrations at build time, previews, domains and monitoring |
 | [Security and privacy](security.md) | Authorization, database exposure, what data leaves the app, student controls |
-| [Known issues](known-issues.md) | Defects and gaps found in the latest full review |
 
 Related documents at the repository root:
 
 - [DESIGN.md](../DESIGN.md): the visual design system, "The Almanac".
-- [PRODUCT.md](../PRODUCT.md): product principles and who Mentra is for.
-- [plan.md](../plan.md): the original product plan and staged roadmap.
-- [AGENTS.md](../AGENTS.md): rules for AI coding agents working in this repository.

@@ -162,9 +162,7 @@ docs/                Documentation and screenshots
 | [Development](docs/development.md) | Local setup, tests and contribution rules |
 | [Deployment](docs/deployment.md) | Vercel, Supabase and monitoring |
 | [Security and privacy](docs/security.md) | How student data is protected |
-| [Known issues](docs/known-issues.md) | Open defects and gaps |
 | [Design system](DESIGN.md) | "The Almanac" visual language |
-| [Product](PRODUCT.md) and [plan](plan.md) | Principles and roadmap |
 
 ## Privacy
 

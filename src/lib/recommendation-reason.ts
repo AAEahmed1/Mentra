@@ -25,7 +25,8 @@ function timingClause(factors: RankFactors): string {
  *
  * Deterministic on purpose: the student can see exactly why something was
  * recommended without an AI call, and the same factors are what the assistant
- * will later read when asked "why?" (plan.md's explainability requirement).
+ * will later read when asked "why?", which is the point: every recommendation
+ * must be able to explain itself.
  */
 export function explainRecommendation(factors: RankFactors): string {
   const clauses = [timingClause(factors)];

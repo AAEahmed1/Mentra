@@ -43,5 +43,17 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# design tool session state
-/.impeccable/questions/
+# Local tooling and internal notes, kept on disk but out of the public repo:
+# design-tool state, AI agent skills and instructions, planning documents.
+/.impeccable/
+/.hallmark/
+/.agents/
+/.windsurf/
+/.claude/
+/skills-lock.json
+/AGENTS.md
+/CLAUDE.md
+/.scratch/
+/plan.md
+/PRODUCT.md
+/docs/known-issues.md

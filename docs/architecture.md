@@ -96,12 +96,9 @@ flowchart LR
 │   └── instrumentation-client.ts  Sentry, browser side
 ├── docs/                      This documentation
 ├── ASSISTANT.md               What the assistant can and cannot do
-├── DESIGN.md                  The design system
-├── PRODUCT.md                 Product principles
-└── plan.md                    Original product plan and roadmap
+└── DESIGN.md                  The design system
 ```
 
-Other top-level folders (`.agents`, `.claude`, `.windsurf`, `.impeccable`, `.hallmark`, `.scratch`) hold AI agent skills, design-tool state and the original v0 tickets. None of them is needed to build or run the app; see [development.md](development.md#repository-extras).
 
 ## Layers
 
@@ -152,4 +149,4 @@ The full flow, the tools and the limits are in [ASSISTANT.md](../ASSISTANT.md).
 - **Row level security closes Supabase's public API.** All tables have RLS enabled with no policies. The app connects as the table owner and is unaffected. See [database.md](database.md#row-level-security).
 - **Migrations run at build time.** `npm run build` applies migrations before `next build`, except on Vercel preview builds. See [deployment.md](deployment.md#migrations-during-the-build).
 - **Privacy in error reports.** Sentry events have request bodies, cookies, headers and most query strings removed before sending. See [security.md](security.md#error-reporting).
-- **Documentation has to stay in step with the assistant.** Any change under `src/lib/ai/` updates [ASSISTANT.md](../ASSISTANT.md) in the same commit, as required by [AGENTS.md](../AGENTS.md).
+- **Documentation has to stay in step with the assistant.** Any change under `src/lib/ai/` updates [ASSISTANT.md](../ASSISTANT.md) in the same commit.

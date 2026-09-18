@@ -89,4 +89,3 @@ Without `OPENAI_API_KEY` the app works normally, but every assistant message ret
 | `eslint.config.mjs` | `eslint-config-next` core web vitals and TypeScript rules |
 | `postcss.config.mjs` | Tailwind CSS v4 through `@tailwindcss/postcss` |
 | `components.json` | shadcn CLI settings (`base-nova` style) |
-| `.claude/launch.json` | Local preview launch configurations for Claude Code |

@@ -9,7 +9,7 @@ import { z } from "zod";
  *    never from the model, so a confused or manipulated model cannot reach
  *    another student's data by naming their id.
  * 2. Arguments are parsed with zod before anything runs. The model proposes;
- *    the app validates and executes (plan.md §19).
+ *    the app validates and executes.
  */
 
 const taskType = z.enum(["task", "assignment", "exam"]);

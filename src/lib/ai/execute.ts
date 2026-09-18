@@ -161,7 +161,7 @@ export async function executeToolCall(
 
       // Hand the model the same factors and wording the dashboard shows, so
       // "why?" is answered from what actually ranked the task rather than
-      // from the model's own guess (plan.md §20, §29).
+      // from the model's own guess.
       return ranked.map((entry, index) => ({
         rank: index + 1,
         id: entry.task.id,

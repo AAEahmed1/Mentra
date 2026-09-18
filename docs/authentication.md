@@ -88,7 +88,7 @@ Better Auth's rate limiter is enabled with `storage: "database"`, so limits hold
 | `/change-password` | 5 requests per 10 minutes |
 | Everything else under `/api/auth` | Better Auth's default (100 requests per 10 seconds) |
 
-The limiter only sees requests that reach `/api/auth`. The Profile page's password form calls Better Auth from a server action, so it is not counted; see [known-issues.md](known-issues.md#security).
+The limiter only sees requests that reach `/api/auth`.
 
 ## Password changes
 
