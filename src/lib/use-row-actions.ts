@@ -19,6 +19,21 @@ type FormAction = (
 type RowAction = (formData: FormData) => Promise<RowActionResult>;
 
 /**
+ * True once React has hydrated, false on the server and on the client's
+ * first render. Any form that submits via `onSubmit` instead of `action`
+ * renders with no working submit path until hydration attaches the handler;
+ * before then, Enter or a click falls through to the browser's native
+ * submit. Gating the submit button on this closes that window.
+ */
+export function useHydrated() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+}
+
+/**
  * The read-then-edit-in-place behaviour every filed row shares.
  *
  * Keeps the row closed until the student opens it, submits through a
@@ -109,20 +124,14 @@ export function useQuickForm(action: FormAction) {
   const [errors, setErrors] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  // These forms render server-side with no `action`/`method`, so `onSubmit`
-  // is the only thing stopping a submit — and it does nothing until React
-  // has hydrated and attached the handler. Submit (via Enter or the button)
-  // before then falls through to the browser's default: a native GET on the
-  // current URL, which puts every field's value in the query string. Gating
-  // the submit button on hydration closes that window; `isHydrated` is false
-  // on the server and on the client's first render, then flips true once
-  // hydration has run, so the button is only ever enabled after `onSubmit`
-  // is live.
-  const isHydrated = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  // These forms render server-side with no `action`, so `onSubmit` is the
+  // only thing stopping a submit — and it does nothing until React has
+  // hydrated and attached the handler. Submit (via Enter or the button)
+  // before then would otherwise fall through to the browser's default
+  // submission; `method="post"` on the form keeps that from putting field
+  // values in the URL, and gating the submit button on `isHydrated` closes
+  // the window entirely, since it only turns true once `onSubmit` is live.
+  const isHydrated = useHydrated();
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -1,26 +1,25 @@
 "use client";
 
-import { useActionState } from "react";
-
-import { createTaskAction, type TaskActionState } from "@/lib/actions/task";
+import { createTaskAction } from "@/lib/actions/task";
 import { TASK_TYPES, TASK_TYPE_LABELS } from "@/lib/task";
+import { useQuickForm } from "@/lib/use-row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
-const initialState: TaskActionState = { errors: [] };
-
 type CourseOption = { id: string; name: string };
 
 export function CreateTaskForm({ courses }: { courses: CourseOption[] }) {
-  const [state, formAction, isPending] = useActionState(
-    createTaskAction,
-    initialState
-  );
+  const form = useQuickForm(createTaskAction);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form
+      key={form.formKey}
+      method="post"
+      onSubmit={form.onSubmit}
+      className="flex flex-col gap-3"
+    >
       <div className="flex flex-col gap-2">
         <Label htmlFor="task-title">Title</Label>
         <Input
@@ -101,19 +100,23 @@ export function CreateTaskForm({ courses }: { courses: CourseOption[] }) {
         <Input id="task-topics" name="topicsToReview" />
       </div>
 
-      {state.errors.length > 0 && (
+      {form.errors.length > 0 && (
         <div
           role="alert"
           className="rounded-xs border border-destructive/45 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
-          {state.errors.map((error) => (
+          {form.errors.map((error) => (
             <p key={error}>{error}</p>
           ))}
         </div>
       )}
 
-      <Button type="submit" disabled={isPending} variant="outline">
-        {isPending ? "Adding…" : "Add task"}
+      <Button
+        type="submit"
+        disabled={!form.isHydrated || form.isPending}
+        variant="outline"
+      >
+        {form.isPending ? "Adding…" : "Add task"}
       </Button>
     </form>
   );

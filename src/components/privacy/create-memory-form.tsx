@@ -1,26 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
-
-import {
-  createMemoryAction,
-  type MemoryActionState,
-} from "@/lib/actions/memory";
+import { createMemoryAction } from "@/lib/actions/memory";
+import { useQuickForm } from "@/lib/use-row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
-const initialState: MemoryActionState = { errors: [] };
-
 export function CreateMemoryForm() {
-  const [state, formAction, isPending] = useActionState(
-    createMemoryAction,
-    initialState
-  );
+  const form = useQuickForm(createMemoryAction);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form
+      key={form.formKey}
+      method="post"
+      onSubmit={form.onSubmit}
+      className="flex flex-col gap-3"
+    >
       <div className="flex flex-col gap-2">
         <Label htmlFor="memory-content">What Mentra knows</Label>
         <Input
@@ -50,19 +46,23 @@ export function CreateMemoryForm() {
         </div>
       </div>
 
-      {state.errors.length > 0 && (
+      {form.errors.length > 0 && (
         <div
           role="alert"
           className="rounded-xs border border-destructive/45 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
-          {state.errors.map((error) => (
+          {form.errors.map((error) => (
             <p key={error}>{error}</p>
           ))}
         </div>
       )}
 
-      <Button type="submit" disabled={isPending} variant="outline">
-        {isPending ? "Saving…" : "Add memory"}
+      <Button
+        type="submit"
+        disabled={!form.isHydrated || form.isPending}
+        variant="outline"
+      >
+        {form.isPending ? "Saving…" : "Add memory"}
       </Button>
     </form>
   );

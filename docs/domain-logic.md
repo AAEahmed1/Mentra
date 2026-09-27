@@ -247,11 +247,14 @@ Notable behaviour:
 
 ## Client helpers
 
-[`use-row-actions.ts`](../src/lib/use-row-actions.ts) provides the hooks the list rows use:
+[`use-row-actions.ts`](../src/lib/use-row-actions.ts) provides the hooks the list rows and creation forms use:
 
+- **`useHydrated()`** reports whether React has hydrated yet. A form that submits via `onSubmit` has no working submit path until hydration attaches the handler, so every form built on these hooks gates its submit button on this and carries `method="post"`, in case a submit slips through before then.
 - **`useInlineEdit(action)`** opens and closes a row's edit form, keeping it open with errors when saving fails.
 - **`useRowAction(action)`** runs a one-field action, such as Complete or Remove, in a transition, and keeps the action's `error` for the row to show.
 - **`useQuickForm(action)`** clears a small form after a successful save by remounting it, and keeps the typed text when saving fails.
+
+All three submit through `onSubmit` rather than a form's `action` prop: React 19 resets every uncontrolled field once a `<form action={fn}>`'s action settles, regardless of what it returned, which would erase a refused submission's input. `onSubmit` prevents the default submit and builds the `FormData` itself, so nothing is reset out from under the student.
 
 [`ConfirmAction`](../src/components/confirm-action.tsx) wraps removals: the first press asks "Remove for good?", the second carries it out, and Escape or **Keep** backs out.
 
