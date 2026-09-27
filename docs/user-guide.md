@@ -5,6 +5,7 @@ What a student can do in Mentra, page by page. The screenshots use the demo term
 - [Getting started](#getting-started)
 - [Today](#today)
 - [Courses](#courses)
+- [Timetable](#timetable)
 - [Work](#work)
 - [Notes](#notes)
 - [Ask Mentra](#ask-mentra)
@@ -62,6 +63,16 @@ A dark theme is available everywhere:
   - **Add a class time** with one or more days, a kind (lecture, lab, tutorial, seminar or class), a start time, a duration and, optionally, a location. Ticking several days adds one class time per day. **Edit** or **Remove** any of them from its row.
   - **Add coursework** with a title, type (task, assignment, quiz or exam) and date; estimated minutes are optional. It appears in the list here and on the Work page, filed under this course. Use the **Edit or complete these on Work** link to change or complete it.
 - **Delete a term** once it has no courses left. Terms cannot be renamed yet.
+
+## Timetable
+
+![Timetable](screenshots/timetable.jpg)
+
+`/timetable` shows the running term's class times as a week, drawn to scale: each class is as tall as it is long, and today's column is marked. On a phone the grid becomes a list of days instead, in the same order.
+
+- **Choose a term.** With more than one term, a switcher at the top changes which week is shown; the choice is kept in the page address (`?term=`). With none running, the next term to start is shown, or the one that just ended.
+- **Add a class time** from the form at the bottom — the same one used on Courses — picking a course, one or more days, a kind, a start time, a duration and, optionally, a location. It appears on the grid immediately.
+- With no term yet, the page points to Courses to add one first.
 
 ## Work
 
@@ -128,7 +139,7 @@ Each conversation with the assistant is a separate thread, saved to your account
 
 ## Navigation, themes and phones
 
-- The sidebar links to Today, Courses, Work, Notes, Chats, What Mentra knows and Profile, with the theme switch and **Sign out** at the bottom. On larger screens it can be collapsed to icons, and the choice is remembered in the browser.
+- The sidebar links to Today, Courses, Timetable, Work, Notes, Chats, What Mentra knows and Profile, with the theme switch and **Sign out** at the bottom. On larger screens it can be collapsed to icons, and the choice is remembered in the browser.
 - The theme follows your system setting until you switch between light and dark.
 - On phones the sidebar becomes a drawer opened from the top bar, and the term timeline is hidden.
 - Dates follow your own time zone, taken from your browser, so "today" and "overdue" change at your midnight.

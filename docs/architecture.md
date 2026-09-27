@@ -74,7 +74,7 @@ flowchart LR
 │   │   ├── page.tsx           Landing page (signed out)
 │   │   ├── sign-in/ sign-up/ onboarding/
 │   │   ├── dashboard/         "Today"
-│   │   ├── courses/ tasks/ notes/ chats/ privacy/ profile/
+│   │   ├── courses/ timetable/ tasks/ notes/ chats/ privacy/ profile/
 │   │   ├── api/auth/[...all]/ Better Auth handler
 │   │   ├── api/assistant/     Assistant endpoint
 │   │   ├── layout.tsx         Fonts, theme, assistant panel
