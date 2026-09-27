@@ -111,6 +111,8 @@ Data export is not implemented.
 
 When Prisma releases a version that depends on fixed versions itself, remove the matching override.
 
+`better-auth` is pinned exactly to 1.7.1. Version 1.7.6 stopped filling `account.issuer`, which the schema requires, so every new sign-up failed with a 500 while types and the rest of the suite still passed. `src/lib/auth.test.ts` signs up for real against the test database; only move the pin when it passes on the new version.
+
 ## Reporting a vulnerability
 
 Please report suspected vulnerabilities privately to the maintainer rather than opening a public issue.
