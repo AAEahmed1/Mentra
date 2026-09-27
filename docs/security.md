@@ -102,6 +102,15 @@ Data export is not implemented.
 - `NEXT_PUBLIC_SENTRY_DSN` is public by design. Nothing else should use the `NEXT_PUBLIC_` prefix, because those values are bundled into browser code.
 - Use a different `BETTER_AUTH_SECRET` in each environment. Rotating it signs everyone out.
 
+## Dependencies
+
+`npm audit` and GitHub's Dependabot alerts should both read zero. Two transitive packages are pinned by a parent to a vulnerable version, so `package.json` forces them forward with `overrides`:
+
+- `deepmerge-ts` `^8.0.0`. `@prisma/config` pins 7.1.5, which can exhaust the stack merging a self-referencing object. Prisma uses it only to merge `prisma.config.ts`; `prisma validate`, `generate` and `migrate` were checked with 8.x.
+- `mysql2` `^3.24.4`. `prisma` pins 3.15.3 for its MySQL support, which this Postgres app never loads.
+
+When Prisma releases a version that depends on fixed versions itself, remove the matching override.
+
 ## Reporting a vulnerability
 
 Please report suspected vulnerabilities privately to the maintainer rather than opening a public issue.
