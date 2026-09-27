@@ -368,7 +368,8 @@ export function LandingPage({
           <div className="flex max-w-[65ch] flex-col gap-3 text-sm text-muted-foreground">
             <p>
               A chat panel on every page. Before it answers, it reads your
-              courses, your work, your notes and what it has learned about you.
+              courses, your timetable, your work, your notes and what it has
+              learned about you.
               Every deadline it states comes from a lookup. If it does not
               know, it says so.
             </p>
@@ -724,7 +725,7 @@ export function LandingPage({
           Mentra. Set in Bitter and Archivo. Built on Next.js, Prisma and
           Postgres, signed in with Better Auth. The ranking is arithmetic and
           runs on the server. The assistant is an OpenAI model that reads and
-          writes through sixteen checked tools and nothing else; it cannot see
+          writes through seventeen checked tools and nothing else; it cannot see
           the page, the web or your files. Error reports are scrubbed of your
           words before they leave.{" "}
           <Link

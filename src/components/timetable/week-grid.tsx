@@ -92,7 +92,10 @@ export function WeekGrid({
             <div
               key={meeting.id}
               title={`${describeMeeting(meeting)} · ${meeting.course.name}`}
-              className="absolute overflow-hidden rounded-xs border-l-2 border-primary bg-muted px-1.5 py-1 text-xs"
+              // Drawn like an on-track entry on the Term table: a hairline
+              // rule-strong edge around a light ink tint. The design system
+              // has no coloured side tab, at any weight.
+              className="absolute overflow-hidden rounded-xs border border-rule-strong bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-1.5 py-1 text-xs"
               style={{
                 top: `${topPercent}%`,
                 height: `${heightPercent}%`,

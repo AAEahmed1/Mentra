@@ -648,6 +648,18 @@ today's own date. A 2px foot rule closes the table. Every entry carries a
 `title`, a screen-reader name, and a hover/focus card; a 12px caption beneath
 states how to read it.
 
+### Week Grid
+The timetable's week, drawn to scale: 3.5rem per hour between hairline hour
+rules, 08:00–18:00 stretched to whole hours around any earlier or later class,
+Monday to Friday with the weekend only when it has classes, under a 2px head
+rule of tracked-caps day names. Each class is a block with the Term Table's
+on-track treatment — a 1px `rule-strong` edge, 2px radius, a light (8%) ink
+tint — carrying the course code, the time and, from an hour long, its kind and
+place on their own line. Overlapping classes split the day's width into lanes
+rather than overprinting, because a block carries text. Today's column is set
+on banded stock and its day name inked green, only while the term shown is
+running. Below `sm` the grid gives way to the same week as a list of lines.
+
 ### Almanac Table
 Every list of records. A head row of 11px tracked-caps column labels over a 2px
 rule; rows separated by 1px with alternating banded stock; a 2px rule closing
