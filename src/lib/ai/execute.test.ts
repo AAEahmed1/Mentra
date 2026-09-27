@@ -7,6 +7,7 @@ import { createCourse } from "@/lib/services/course";
 import { createTask } from "@/lib/services/task";
 import { createNote } from "@/lib/services/note";
 import { createMemory } from "@/lib/services/memory";
+import { createMeetings } from "@/lib/services/meeting";
 import {
   executeToolCall,
   MAX_MEMORY_RESULTS,
@@ -240,6 +241,31 @@ describe("get_courses — telling terms apart", () => {
     }[];
 
     expect(course.semesterName).toBe("Autumn 2026");
+  });
+});
+
+describe("get_timetable — when the student's classes are", () => {
+  test("gives each class its course, term, day and times in words", async () => {
+    await createMeetings(userId, courseId, {
+      kind: "lab",
+      weekdays: [2],
+      startMinute: 840,
+      durationMinutes: 110,
+      location: "Lab B",
+    });
+
+    const [meeting] = (await run(userId, "get_timetable", {})) as Record<string, unknown>[];
+
+    expect(meeting).toMatchObject({
+      courseId,
+      courseName: "Network Defence",
+      semesterName: "Autumn 2026",
+      kind: "lab",
+      day: "Tuesday",
+      start: "14:00",
+      end: "15:50",
+      location: "Lab B",
+    });
   });
 });
 

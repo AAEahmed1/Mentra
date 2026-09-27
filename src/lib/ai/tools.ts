@@ -58,6 +58,7 @@ const calendarDate = z
 
 const toolSchemas = {
   get_courses: empty,
+  get_timetable: empty,
   get_tasks: z.object({
     status: taskStatus.optional(),
     courseId: z.string().optional(),
@@ -166,6 +167,12 @@ export const toolDefinitions: ToolDefinition[] = [
     name: "get_courses",
     description:
       "List every course the student has, across all of their terms, with code, professor, credits and the term each one runs in.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "get_timetable",
+    description:
+      "List the student's weekly class times across all of their terms: course, term, kind of class, weekday, start and end time (24-hour, their own clock) and location. Use it for questions about when or where their classes are, or what they have on a given day.",
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   {

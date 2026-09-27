@@ -70,7 +70,7 @@ Dates (`dueDate`, `startDate`, `endDate`) are validated as real `YYYY-MM-DD` cal
 
 ## What it can read
 
-Six read tools.
+Seven read tools.
 
 The capped reads (`get_tasks`, `search_notes`, `search_memory`) return `{ <items>, total, truncated }`, and when something was left out, a `note` saying how many were shown and how to narrow the search.
 
@@ -80,6 +80,7 @@ The capped reads (`get_tasks`, `search_notes`, `search_memory`) return `{ <items
 - **`search_notes`**: notes matched case-insensitively by `query` in the title or body, or, given a `taskId`, the notes attached to that piece of work, newest first, **at most 20**. Each result includes the body, `courseName` and `taskId`. A body over 2000 characters is cut there and ends with a `[shortened: N more characters not shown ...]` marker; the `update_note` description tells the model not to replace a body it only saw shortened. With no arguments it returns the newest notes.
 - **`search_memory`**: what Mentra has stored about the student, newest first, **at most 200**, with a note pointing at the "What Mentra knows" page when there are more. Memories are already in the prompt, so the model is told to call this only when the prompt says the list was truncated.
 - **`list_semesters`**: the student's terms, with ids and start and end dates.
+- **`get_timetable`**: every class time the student has, from **all** terms, not capped. Each item has the meeting id, course id and name, term name, kind, weekday name, and start and end time as `HH:MM` on the student's own clock, plus location.
 
 ## What it can write
 
@@ -128,8 +129,9 @@ The system prompt is rebuilt for every request from two things the model must no
 - **Unfile a note.** `update_note` can move a note to a different course or piece of work, but not clear the link.
 - **Read or change the student's profile or account.** There is no tool for names, program, institution, email, password or deleting the account.
 - **Touch grades.** There is no grade field in the schema.
+- **Create, change or remove class times.** `createMeetings`, `updateMeeting` and `deleteMeeting` exist as services but have no tools; the timetable is edited on the Courses and Timetable pages.
 - **See tool results from earlier turns.** Only the text of past messages is kept.
-- **See anything outside its sixteen tools.** It cannot read the page the student is looking at, browse the web, open files, or see other conversations.
+- **See anything outside its seventeen tools.** It cannot read the page the student is looking at, browse the web, open files, or see other conversations.
 - **Reach another student's data.** No tool accepts a `userId`. Ownership is bound from the session in the route handler and passed to `executeToolCall` separately from the model's arguments, and a `userId` smuggled into arguments is stripped during validation. A test over `TOOL_NAMES` fails if a new tool breaks this.
 
 ## Limits
@@ -137,7 +139,7 @@ The system prompt is rebuilt for every request from two things the model must no
 - **Five rounds of tool execution per turn** (`MAX_TOOL_ROUNDS` in `chat.ts`), so at most six model calls, the last of them with `tool_choice: "none"`. There is no cap on how many tools the model can request in one round. Text the model writes alongside tool calls in an intermediate round is not shown.
 - **Thirty turns per student per rolling hour** (`MAX_TURNS_PER_WINDOW` and `TURN_WINDOW_MS` in `limits.ts`). Counted from stored `user` messages across all of the student's conversations, before OpenAI is called; the 429 says roughly when the oldest turn in the window ages out. Failed turns are never stored, so they do not count, and requests sent at the same moment are all checked before any of them is stored.
 - **1200 output tokens per completion** (`MAX_COMPLETION_TOKENS` in `limits.ts`, sent as `max_completion_tokens`). A reply that hits the cap is cut off where it stopped.
-- **Read tools are capped**: 50 tasks from `get_tasks`, 20 notes from `search_notes` with bodies cut at 2000 characters, 200 memories from `search_memory` (`MAX_TASK_RESULTS`, `MAX_NOTE_RESULTS`, `MAX_NOTE_BODY_LENGTH`, `MAX_MEMORY_RESULTS` in `execute.ts`). The model is told whenever a list was cut. `get_courses`, `get_deadlines` and `list_semesters` are not capped. `search_notes` and `get_tasks` still read every matching row from the database and cap what is sent to the model.
+- **Read tools are capped**: 50 tasks from `get_tasks`, 20 notes from `search_notes` with bodies cut at 2000 characters, 200 memories from `search_memory` (`MAX_TASK_RESULTS`, `MAX_NOTE_RESULTS`, `MAX_NOTE_BODY_LENGTH`, `MAX_MEMORY_RESULTS` in `execute.ts`). The model is told whenever a list was cut. `get_courses`, `get_timetable`, `get_deadlines` and `list_semesters` are not capped. `search_notes` and `get_tasks` still read every matching row from the database and cap what is sent to the model.
 - **Forty messages of history** (`MAX_STORED_HISTORY` in `message.ts`), read from the database rather than sent by the browser. This is the window given to the model and shown in the panel on first load; the chat page shows the whole conversation. Older lines stay in the database.
 - **A message is capped at 4000 characters.**
 - **Forty memories are injected per turn** (`MAX_INJECTED_MEMORIES`), newest first, and only those are loaded.
@@ -155,7 +157,7 @@ The system prompt is rebuilt for every request from two things the model must no
 
 ## Privacy and safety notes
 
-- Every turn sends the student's memories, recent messages, and whatever the tools fetch (courses, work, full note bodies) to OpenAI.
+- Every turn sends the student's memories, recent messages, and whatever the tools fetch (courses, work, full note bodies, class times) to OpenAI.
 - Memories are written by the model from conversation and then placed in the system message on every later turn, so a saved memory carries more weight than ordinary chat text. Students can review and delete memories on the "What Mentra knows" page.
 - Note bodies and task titles are returned to the model verbatim (note bodies up to 2000 characters). Text pasted into a note could therefore try to steer the assistant. The prompt tells the model that stored content is data rather than instructions, and that deleting needs the student's own request in the conversation, but that is an instruction to a model, not a guarantee. The damage is limited to the student's own data, but deletions are permanent.
 - Errors sent to Sentry carry the exception only, not the student's message or the reply.

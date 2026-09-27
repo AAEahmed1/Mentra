@@ -146,6 +146,7 @@ describe("toolDefinitions", () => {
         "get_courses",
         "get_deadlines",
         "get_tasks",
+        "get_timetable",
         "save_memory",
         "search_memory",
         "search_notes",
