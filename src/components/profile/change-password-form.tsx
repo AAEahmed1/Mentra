@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useTransition, type FormEvent } from "react";
 
 import {
   changePasswordAction,
   type PasswordActionState,
 } from "@/lib/actions/profile";
 import { MIN_PASSWORD_LENGTH } from "@/lib/profile";
+import { useHydrated } from "@/lib/use-row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,12 +19,26 @@ export function ChangePasswordForm() {
     changePasswordAction,
     initialState,
   );
+  const [, startTransition] = useTransition();
+  const isHydrated = useHydrated();
+
+  // See profile-form.tsx: `<form action={formAction}>` has React reset every
+  // uncontrolled field once the action settles, whatever it returned — which
+  // would wipe a rejected password change along with a successful one.
+  // Submitting through `onSubmit` skips that automatic reset; success still
+  // empties the fields, but on purpose, via the `key` remount below.
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => formAction(formData));
+  }
 
   return (
     // Keyed on success so the fields empty once the password has changed.
     <form
       key={state.saved ? "saved" : "editing"}
-      action={formAction}
+      method="post"
+      onSubmit={onSubmit}
       className="flex max-w-md flex-col gap-4"
     >
       <div className="flex flex-col gap-2">
@@ -76,7 +91,7 @@ export function ChangePasswordForm() {
       )}
 
       <div className="flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button type="submit" size="sm" disabled={!isHydrated || isPending}>
           {isPending ? "Changing…" : "Change password"}
         </Button>
         {state.saved && !isPending && (

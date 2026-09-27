@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useTransition, type FormEvent } from "react";
 
 import {
   updateProfileAction,
   type ProfileActionState,
 } from "@/lib/actions/profile";
+import { useHydrated } from "@/lib/use-row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,9 +26,28 @@ export function ProfileForm({
     updateProfileAction,
     initialState,
   );
+  const [, startTransition] = useTransition();
+  const isHydrated = useHydrated();
+
+  // A plain `<form action={formAction}>` would have React reset every
+  // uncontrolled field once the action settles, whatever it returned — so a
+  // rejected submission would wipe what the student typed along with a
+  // successful one clearing it on purpose. Submitting through `onSubmit`
+  // instead runs the action without that automatic reset; the fields being
+  // uncontrolled (via `defaultValue`) means a failed save simply leaves what
+  // is already on screen, edits included.
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => formAction(formData));
+  }
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-4">
+    <form
+      method="post"
+      onSubmit={onSubmit}
+      className="flex max-w-md flex-col gap-4"
+    >
       <div className="flex flex-col gap-2">
         <Label htmlFor="profile-name">Name</Label>
         <Input
@@ -78,7 +98,7 @@ export function ProfileForm({
       )}
 
       <div className="flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button type="submit" size="sm" disabled={!isHydrated || isPending}>
           {isPending ? "Saving…" : "Save changes"}
         </Button>
         {state.saved && !isPending && (

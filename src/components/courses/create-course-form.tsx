@@ -1,25 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
-
-import {
-  createCourseAction,
-  type CourseActionState,
-} from "@/lib/actions/course";
+import { createCourseAction } from "@/lib/actions/course";
+import { useQuickForm } from "@/lib/use-row-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const initialState: CourseActionState = { errors: [] };
-
 export function CreateCourseForm({ semesterId }: { semesterId: string }) {
-  const [state, formAction, isPending] = useActionState(
-    createCourseAction,
-    initialState
-  );
+  const form = useQuickForm(createCourseAction);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form
+      key={form.formKey}
+      method="post"
+      onSubmit={form.onSubmit}
+      className="flex flex-col gap-3"
+    >
       <input type="hidden" name="semesterId" value={semesterId} />
 
       <div className="flex flex-col gap-2">
@@ -58,19 +54,23 @@ export function CreateCourseForm({ semesterId }: { semesterId: string }) {
         </div>
       </div>
 
-      {state.errors.length > 0 && (
+      {form.errors.length > 0 && (
         <div
           role="alert"
           className="rounded-xs border border-destructive/45 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
-          {state.errors.map((error) => (
+          {form.errors.map((error) => (
             <p key={error}>{error}</p>
           ))}
         </div>
       )}
 
-      <Button type="submit" disabled={isPending} variant="outline">
-        {isPending ? "Adding…" : "Add course"}
+      <Button
+        type="submit"
+        disabled={!form.isHydrated || form.isPending}
+        variant="outline"
+      >
+        {form.isPending ? "Adding…" : "Add course"}
       </Button>
     </form>
   );

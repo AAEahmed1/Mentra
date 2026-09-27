@@ -104,7 +104,7 @@ Shared pieces worth knowing:
 
 ### Forms
 
-Forms are client components that call server actions through `useActionState` and render `{ errors }` in a `role="alert"` box. Inline edit and row buttons use the hooks in `src/lib/use-row-actions.ts`; see [domain-logic.md](domain-logic.md#client-helpers).
+Forms are client components that call server actions and render `{ errors }` in a `role="alert"` box. React 19 resets every uncontrolled field of a `<form action={fn}>` once the action settles, whatever it returned, which would wipe a refused submission's input — so no form submits via the `action` prop. A small form with only `{ errors }` state (create task, course, semester, note, memory, and the row forms) uses `useQuickForm`; one with extra state (a saved flag, a redirect) keeps `useActionState` but submits through its own `onSubmit`, wrapped in `startTransition`. Either way the submit button is disabled until `useHydrated()` reports the client has hydrated and `onSubmit` is live, and the form carries `method="post"` so a submit before then falls back to a native POST instead of leaking field values into the URL. Inline edit, row buttons and these hooks (`useHydrated`, `useQuickForm`, `useInlineEdit`, `useRowAction`) live in `src/lib/use-row-actions.ts`; see [domain-logic.md](domain-logic.md#client-helpers).
 
 ## Design system implementation
 
