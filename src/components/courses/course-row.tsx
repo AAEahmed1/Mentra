@@ -79,7 +79,7 @@ export function CourseRow({
 
   return (
     <FiledRowEditing>
-      <form action={edit.submit} className="flex flex-col gap-3">
+      <form onSubmit={edit.onSubmit} className="flex flex-col gap-3">
         <input type="hidden" name="courseId" value={course.id} />
 
         <div className="flex flex-col gap-2">

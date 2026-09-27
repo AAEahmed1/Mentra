@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 
 import type { RowActionResult } from "@/lib/action-state";
 
@@ -19,13 +19,21 @@ type RowAction = (formData: FormData) => Promise<RowActionResult>;
  * Keeps the row closed until the student opens it, submits through a
  * transition so the row can show pending state, and only closes on success —
  * validation errors keep the form open with the student's input intact.
+ *
+ * The form calls `onSubmit`, not `action`: React resets an uncontrolled
+ * form's fields after any `<form action={fn}>` submission completes,
+ * regardless of what it returned, which would empty the student's input right
+ * when a validation error needs it kept. `onSubmit` prevents the default
+ * submission and builds the `FormData` itself, so nothing gets reset.
  */
 export function useInlineEdit(action: FormAction) {
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  function submit(formData: FormData) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     startTransition(async () => {
       const result = await action({ errors: [] }, formData);
 
@@ -43,7 +51,7 @@ export function useInlineEdit(action: FormAction) {
     isEditing,
     errors,
     isPending,
-    submit,
+    onSubmit,
     open: () => setIsEditing(true),
     cancel: () => {
       // Drop stale errors too, so reopening starts clean.
@@ -81,6 +89,13 @@ export function useRowAction(action: RowAction) {
  *
  * Clears its fields on success and keeps them on failure, so a validation
  * error never costs the student what they typed.
+ *
+ * The form calls `onSubmit`, not `action`: React resets an uncontrolled
+ * form's fields after any `<form action={fn}>` submission completes,
+ * regardless of what it returned, which would empty the student's input right
+ * when a validation error needs it kept. `onSubmit` prevents the default
+ * submission and builds the `FormData` itself, so nothing gets reset; success
+ * still clears the fields, but on purpose, by remounting the form.
  */
 export function useQuickForm(action: FormAction) {
   // Clearing by remount rather than a ref: the fields are uncontrolled, so
@@ -89,7 +104,9 @@ export function useQuickForm(action: FormAction) {
   const [errors, setErrors] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  function submit(formData: FormData) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     startTransition(async () => {
       const result = await action({ errors: [] }, formData);
 
@@ -103,5 +120,5 @@ export function useQuickForm(action: FormAction) {
     });
   }
 
-  return { formKey, errors, isPending, submit };
+  return { formKey, errors, isPending, onSubmit };
 }

@@ -94,7 +94,7 @@ export function NoteRow({
 
   return (
     <FiledRowEditing>
-      <form action={edit.submit} className="flex flex-col gap-3">
+      <form onSubmit={edit.onSubmit} className="flex flex-col gap-3">
         <input type="hidden" name="noteId" value={note.id} />
 
         <div className="flex flex-col gap-2">
