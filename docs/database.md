@@ -153,17 +153,19 @@ Migrations live in [`prisma/migrations/`](../prisma/migrations) and are applied 
 | `20260826212154_note_task_link` | Adds `note.taskId` (set null) |
 | `20260827185110_message` | `MessageRole` and the `message` table, one log per student |
 | `20260827191430_conversation` | Hand-edited data migration: adds `conversation`, backfills one conversation per student who already had messages (titled from their first message), points every message at it, then makes `message.conversationId` required |
-| `20260913040000_enable_row_level_security` | Enables row level security on every table in `public` |
+| `20260913040000_enable_row_level_security` | Enables row level security on every table in `public`. Edited on 2026-09-26 to guard the `_prisma_migrations` statement (see below) |
 | `20260917030228_rate_limit` | `rate_limit` table for Better Auth's database-backed rate limiter, with RLS enabled |
 | `20260917040000_message_user_created_index` | Index on `message(userId, createdAt)` for the assistant's turn limit |
 | `20260926120000_timetable` | Adds `quiz` to `TaskType`, `MeetingKind`, and the `course_meeting` table (cascade from course), with RLS enabled |
+
+The RLS migration was edited after it had been applied. Its `ALTER TABLE "_prisma_migrations"` is now inside a `DO` block that runs it only when `to_regclass('"_prisma_migrations"')` finds the table. Every real database has that table, so the effect there is unchanged. The shadow database `prisma migrate dev` replays migrations into does not, and the unguarded statement had made every `migrate dev` fail since this migration landed. Databases that applied the original keep its old checksum in `_prisma_migrations`: `migrate deploy` does not compare checksums, so production deploys are unaffected, but `migrate dev` against such a database would report the migration as modified. The local databases' checksums were updated to match.
 
 Two consequences of the hand-edited conversation migration: backfilled conversations have UUID ids while newer ones have cuids, and a backfilled conversation whose student only had assistant messages has a null title. Both are harmless.
 
 ### Adding a migration
 
 1. Edit `prisma/schema.prisma`.
-2. Run `npx prisma migrate dev --name <change>` against your local database.
+2. Run `npx prisma migrate dev --name <change>` against your local database. It needs `SHADOW_DATABASE_URL` set (see [development.md](development.md)); without it Migrate copies the app's own database as its shadow and fails.
 3. **If the migration creates a table**, add `ALTER TABLE "<table>" ENABLE ROW LEVEL SECURITY;` to the generated SQL. Prisma does not do this, and `src/lib/services/rls.test.ts` fails until you do.
 4. Commit the schema and the migration folder together. The next deploy applies it.
 
