@@ -7,6 +7,8 @@ import {
 } from "@/lib/services/task";
 import { createCourse, listCoursesForUser } from "@/lib/services/course";
 import { createSemester, listSemestersForUser } from "@/lib/services/semester";
+import { listMeetingsForUser } from "@/lib/services/meeting";
+import { formatClockTime, weekdayLabel } from "@/lib/meeting";
 import {
   createNote,
   deleteNote,
@@ -106,6 +108,26 @@ export async function executeToolCall(
         credits: course.credits,
         semesterId: course.semesterId,
         semesterName: terms.get(course.semesterId) ?? null,
+      }));
+    }
+
+    case "get_timetable": {
+      const [meetings, semesters] = await Promise.all([
+        listMeetingsForUser(userId),
+        listSemestersForUser(userId),
+      ]);
+      // Days and times in words, so the model never does clock arithmetic.
+      const terms = new Map(semesters.map((term) => [term.id, term.name]));
+      return meetings.map((meeting) => ({
+        id: meeting.id,
+        courseId: meeting.course.id,
+        courseName: meeting.course.name,
+        semesterName: terms.get(meeting.course.semesterId) ?? null,
+        kind: meeting.kind,
+        day: weekdayLabel(meeting.weekday, "long"),
+        start: formatClockTime(meeting.startMinute),
+        end: formatClockTime(meeting.startMinute + meeting.durationMinutes),
+        location: meeting.location,
       }));
     }
 
