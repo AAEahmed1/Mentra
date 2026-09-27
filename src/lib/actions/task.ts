@@ -34,13 +34,15 @@ function readTaskFormFields(formData: FormData) {
 }
 
 /**
- * Work appears on the Work page, drives the ranking on Today, and fills the
- * "about a piece of work" picker on Notes, so a change refreshes all three.
+ * Work appears on the Work page, drives the ranking on Today, fills the
+ * "about a piece of work" picker on Notes, and now also lists under its
+ * course on Courses, so a change refreshes all four.
  */
 function revalidateWork() {
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
   revalidatePath("/notes");
+  revalidatePath("/courses");
 }
 
 export async function createTaskAction(

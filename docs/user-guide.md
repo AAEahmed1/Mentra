@@ -58,6 +58,9 @@ A dark theme is available everywhere:
 - **Edit** a course in place, or **Remove** it after confirming. Work and notes filed under a removed course are kept, just no longer filed under it.
 - **Sort** the courses in every term by name, code or credits with the **Sort by** control at the top. Credits puts the heaviest courses first; courses without a code or credits go last. The choice stays in the page address, so it survives a reload.
 - **Collapse a term** by clicking its heading. The heading still shows how many courses and credits it holds. Terms that have already ended start collapsed.
+- **Open a course** to see its class times and coursework. It starts folded, showing a count of each; click it to expand.
+  - **Add a class time** with one or more days, a kind (lecture, lab, tutorial, seminar or class), a start time, a duration and, optionally, a location. Ticking several days adds one class time per day. **Edit** or **Remove** any of them from its row.
+  - **Add coursework** with a title, type (task, assignment, quiz or exam) and date; estimated minutes are optional. It appears in the list here and on the Work page, filed under this course. Use the **Edit or complete these on Work** link to change or complete it.
 - **Delete a term** once it has no courses left. Terms cannot be renamed yet.
 
 ## Work

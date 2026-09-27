@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { updateCourseAction } from "@/lib/actions/course";
 import { useInlineEdit } from "@/lib/use-row-actions";
 import {
@@ -25,7 +27,13 @@ type Course = {
   credits: number | null;
 };
 
-export function CourseRow({ course }: { course: Course }) {
+export function CourseRow({
+  course,
+  panel,
+}: {
+  course: Course;
+  panel?: ReactNode;
+}) {
   const edit = useInlineEdit(updateCourseAction);
   const remove = useDeleteCourse();
 
@@ -41,6 +49,7 @@ export function CourseRow({ course }: { course: Course }) {
     return (
       <FiledRow
         error={remove.error}
+        detail={panel}
         actions={
           <>
             <Button
