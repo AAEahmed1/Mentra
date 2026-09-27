@@ -20,7 +20,7 @@ export function QuickNoteForm({ taskId }: { taskId: string }) {
   return (
     <form
       key={form.formKey}
-      action={form.submit}
+      onSubmit={form.onSubmit}
       className="flex flex-col gap-2"
     >
       <input type="hidden" name="taskId" value={taskId} />

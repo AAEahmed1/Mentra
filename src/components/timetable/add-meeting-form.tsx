@@ -30,7 +30,7 @@ export function AddMeetingForm({
   const form = useQuickForm(createMeetingAction);
 
   return (
-    <form key={form.formKey} action={form.submit} className="flex flex-col gap-3">
+    <form key={form.formKey} onSubmit={form.onSubmit} className="flex flex-col gap-3">
       {courseId ? (
         <input type="hidden" name="courseId" value={courseId} />
       ) : (

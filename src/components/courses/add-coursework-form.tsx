@@ -20,7 +20,7 @@ export function AddCourseworkForm({ courseId }: { courseId: string }) {
   const id = (field: string) => `coursework-${field}-${courseId}`;
 
   return (
-    <form key={form.formKey} action={form.submit} className="flex flex-col gap-3">
+    <form key={form.formKey} onSubmit={form.onSubmit} className="flex flex-col gap-3">
       <input type="hidden" name="courseId" value={courseId} />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr_1fr_1fr]">
         <div className="flex flex-col gap-2">

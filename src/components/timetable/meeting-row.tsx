@@ -66,7 +66,7 @@ export function MeetingRow({ meeting }: { meeting: Meeting }) {
 
   return (
     <FiledRowEditing>
-      <form action={edit.submit} className="flex flex-col gap-3">
+      <form onSubmit={edit.onSubmit} className="flex flex-col gap-3">
         <input type="hidden" name="meetingId" value={meeting.id} />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div className="flex flex-col gap-2">
