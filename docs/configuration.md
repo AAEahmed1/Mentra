@@ -8,6 +8,7 @@ Every environment variable Mentra reads, where it is used, and what happens with
 | --- | --- | --- | --- |
 | `DATABASE_URL` | **Yes** | `src/lib/prisma.ts`; `prisma.config.ts` when `DIRECT_URL` is unset | Runtime PostgreSQL connection |
 | `DIRECT_URL` | Production only | `prisma.config.ts` (Prisma CLI and Migrate) | Connection for migrations when it differs from the runtime one |
+| `SHADOW_DATABASE_URL` | Local, for `migrate dev` | `prisma.config.ts` (Prisma Migrate) | The empty shadow database `prisma migrate dev` replays migrations into. Point it at the `mentra` server's shadow port, one above its database port. Unset elsewhere |
 | `TEST_DATABASE_URL` | For database tests | `vitest.config.ts` | A separate database for the test suite |
 | `MIGRATE_ON_PREVIEW` | No | `scripts/migrate-for-build.mjs` | Set to `1` to let Vercel preview builds apply migrations (only when Preview has its own database) |
 | `BETTER_AUTH_SECRET` | **Yes** | Better Auth (read implicitly) | Signs session cookies and tokens |

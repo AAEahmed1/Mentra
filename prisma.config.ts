@@ -19,5 +19,12 @@ export default defineConfig({
     // session pooler (5432) for that; DATABASE_URL stays the runtime
     // connection. Locally the two are the same, so fall back.
     url: present(process.env["DIRECT_URL"]) ?? present(process.env["DATABASE_URL"]),
+    // `migrate dev` replays every migration into a scratch "shadow" database.
+    // Left to itself it creates one with CREATE DATABASE, which copies
+    // template1 — and a `prisma dev` server's database *is* template1, so the
+    // copy starts with every table already in it and the first migration
+    // fails with "relation already exists". `prisma dev` runs an empty shadow
+    // server alongside each instance; point Migrate at that instead.
+    shadowDatabaseUrl: present(process.env["SHADOW_DATABASE_URL"]),
   },
 });
