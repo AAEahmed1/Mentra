@@ -126,10 +126,10 @@ Opening `/dashboard`:
 
 Adding a piece of work from `/tasks`:
 
-1. `CreateTaskForm` submits to `createTaskAction` through React's `useActionState`.
+1. `CreateTaskForm` submits to `createTaskAction` through `useQuickForm`, which calls the action from the form's `onSubmit` so a refused submission keeps what was typed.
 2. The action calls `requireUserId()`, then `parseTaskInput()`, which trims text, checks lengths and numbers, turns blanks into `undefined` and applies defaults.
 3. `createTask()` checks that the chosen course belongs to the student, then inserts the row.
-4. The action revalidates `/tasks`, `/dashboard` and `/notes`, and returns `{ errors: [] }`. The form resets and the page re-renders with the new row.
+4. The action revalidates `/tasks`, `/dashboard` and `/notes`, and returns `{ errors: [] }`. The form clears by remounting and the page re-renders with the new row.
 
 ### Asking the assistant
 
