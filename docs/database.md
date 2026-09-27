@@ -29,6 +29,7 @@ erDiagram
     semester ||--o{ course : "contains (restrict)"
     course |o--o{ task : "files (set null)"
     course |o--o{ note : "files (set null)"
+    course ||--o{ course_meeting : "has (cascade)"
     task |o--o{ note : "attaches (set null)"
     conversation ||--o{ message : contains
 ```
@@ -39,10 +40,11 @@ erDiagram
 | --- | --- |
 | `TaskStatus` | `not_started`, `in_progress`, `paused`, `completed`, `cancelled` |
 | `TaskPriority` | `low`, `medium`, `high` |
-| `TaskType` | `task`, `assignment`, `exam` |
+| `TaskType` | `task`, `assignment`, `quiz`, `exam` |
 | `MemoryType` | `profile`, `commitment`, `learning_state`, `behavioral` |
 | `MemorySource` | `explicit` (the student said it), `inferred` (the assistant concluded it) |
 | `MessageRole` | `user`, `assistant` |
+| `MeetingKind` | `lecture`, `lab`, `tutorial`, `seminar`, `other` |
 
 ### `User` (table `user`)
 
@@ -66,6 +68,21 @@ A term: `name`, required `startDate` and `endDate`, and `userId` (cascade on use
 ### `Course` (table `course`)
 
 A course inside a semester: `name`, optional `code`, `professor` and `credits`. A course has **no `userId`**. It belongs to a student only through its semester, so every ownership check on a course filters on `semester.userId`. The foreign key to `semester` is `onDelete: Restrict`, so a semester that still has courses cannot be deleted.
+
+### `CourseMeeting` (table `course_meeting`)
+
+One weekly class time for a course: a course meets on this `weekday`, at this time, every week of its term. Times are minutes since midnight on the student's own wall clock, not instants — a 09:30 lecture is 09:30 wherever the student's browser says they are, the same way due dates already work (see `src/lib/timezone.ts`), so the timetable and Today never disagree about what day or hour it is.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `kind` | MeetingKind | Default `lecture` |
+| `weekday` | Int | ISO weekday: 1 is Monday, 7 is Sunday |
+| `startMinute` | Int | Minutes since midnight, 0 to 1439, on the student's wall clock |
+| `durationMinutes` | Int | |
+| `location` | String? | |
+| `courseId` | String | Required; cascade on course delete |
+
+Indexed on `courseId`. The foreign key to `course` is `onDelete: Cascade`, unlike work and notes: a class time is meaningless without its course, whereas work and notes are the student's own and survive being unfiled. RLS is enabled on `course_meeting`.
 
 ### `Task` (table `task`)
 
@@ -118,7 +135,7 @@ These are owned by Better Auth's Prisma adapter. Do not write to them from appli
 | --- | --- |
 | User | Cascades to sessions, accounts, semesters, tasks, notes, memories, conversations and messages. The semester cascade is blocked while any course exists, so courses must be deleted first (see `deleteAccount`). |
 | Semester | Refused by the database while it has courses. `deleteSemester` checks first and returns `has_courses`. |
-| Course | Tasks and notes filed under it keep existing, with `courseId` set to null. |
+| Course | Tasks and notes filed under it keep existing, with `courseId` set to null. Its meetings are deleted. |
 | Task | Notes attached to it keep existing, with `taskId` set to null. |
 | Conversation | Its messages are deleted. |
 
@@ -139,6 +156,7 @@ Migrations live in [`prisma/migrations/`](../prisma/migrations) and are applied 
 | `20260913040000_enable_row_level_security` | Enables row level security on every table in `public` |
 | `20260917030228_rate_limit` | `rate_limit` table for Better Auth's database-backed rate limiter, with RLS enabled |
 | `20260917040000_message_user_created_index` | Index on `message(userId, createdAt)` for the assistant's turn limit |
+| `20260926120000_timetable` | Adds `quiz` to `TaskType`, `MeetingKind`, and the `course_meeting` table (cascade from course), with RLS enabled |
 
 Two consequences of the hand-edited conversation migration: backfilled conversations have UUID ids while newer ones have cuids, and a backfilled conversation whose student only had assistant messages has a null title. Both are harmless.
 

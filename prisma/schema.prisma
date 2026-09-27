@@ -18,10 +18,10 @@ model User {
   institution   String?
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean        @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   sessions      Session[]
   accounts      Account[]
   semesters     Semester[]
@@ -67,11 +67,11 @@ model Conversation {
 /// costs a student their place in a conversation; losing memory would cost them
 /// everything the assistant knows about them.
 model Message {
-  id        String      @id @default(cuid())
+  id             String       @id @default(cuid())
   /// Total order across all messages, and so within a conversation. Two rows written in the same
   /// call can share a createdAt to the millisecond, which would let an answer
   /// sort above its own question.
-  seq       Int         @default(autoincrement())
+  seq            Int          @default(autoincrement())
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversationId String
@@ -150,6 +150,7 @@ enum TaskPriority {
 enum TaskType {
   task
   assignment
+  quiz
   exam
 }
 
@@ -205,11 +206,47 @@ model Course {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  tasks Task[]
-  notes Note[]
+  tasks    Task[]
+  notes    Note[]
+  meetings CourseMeeting[]
 
   @@index([semesterId])
   @@map("course")
+}
+
+enum MeetingKind {
+  lecture
+  lab
+  tutorial
+  seminar
+  other
+}
+
+/// One weekly class: a course meets on this weekday, at this time, every week
+/// of its term.
+///
+/// Times are minutes since midnight on the student's own wall clock, not
+/// instants. A 09:30 lecture is 09:30 wherever the student's browser says they
+/// are, which is how due dates already work (see src/lib/timezone.ts), so the
+/// timetable and Today never disagree about what day or hour it is.
+model CourseMeeting {
+  id              String      @id @default(cuid())
+  courseId        String
+  // A class time means nothing without its course, unlike work or notes,
+  // which are the student's own and survive being unfiled.
+  course          Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  kind            MeetingKind @default(lecture)
+  /// ISO weekday: 1 is Monday, 7 is Sunday.
+  weekday         Int
+  /// Minutes since midnight, 0 to 1439.
+  startMinute     Int
+  durationMinutes Int
+  location        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([courseId])
+  @@map("course_meeting")
 }
 
 model Session {
