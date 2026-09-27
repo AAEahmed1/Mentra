@@ -126,7 +126,7 @@ Shared helpers live in [`form-values.ts`](../src/lib/form-values.ts). Text is tr
 | `dueDate` | Optional; must be a valid date |
 | `priority` | `low`, `medium` or `high`; default `medium` |
 | `estimatedDuration` | Optional whole number of minutes, 0 to 10,080 (a week) |
-| `type` | `task`, `assignment` or `exam`; default `task` |
+| `type` | `task`, `assignment`, `quiz` or `exam`; default `task` |
 | `topicsToReview` | Optional, up to 1,000 characters |
 | `courseId` | Optional; must be one of the student's courses (checked in the service on create and update) |
 

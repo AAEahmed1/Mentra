@@ -16,6 +16,18 @@ export const TASK_STATUSES = [
   "cancelled",
 ] as const;
 
+export const TASK_TYPES = ["task", "assignment", "quiz", "exam"] as const;
+
+export type TaskTypeValue = (typeof TASK_TYPES)[number];
+
+/** How a type reads wherever work is listed. */
+export const TASK_TYPE_LABELS: Record<TaskTypeValue, string> = {
+  task: "Task",
+  assignment: "Assignment",
+  quiz: "Quiz",
+  exam: "Exam",
+};
+
 /** A week of minutes. No single piece of work is planned for longer. */
 export const MAX_TASK_MINUTES = 10_080;
 
@@ -54,7 +66,7 @@ const priority = z.preprocess(
 
 const type = z.preprocess(
   blankToUndefined,
-  z.enum(["task", "assignment", "exam"], { error: "Pick a type" }).default("task")
+  z.enum(TASK_TYPES, { error: "Pick a type" }).default("task")
 );
 
 const taskSchema = z.object({

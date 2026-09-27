@@ -95,6 +95,15 @@ describe("validateToolCall — accepting good calls", () => {
     expect(result.ok).toBe(true);
   });
 
+  test("accepts a quiz from create_task", () => {
+    const result = validateToolCall("create_task", {
+      title: "Week 3 quiz",
+      type: "quiz",
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
   test("accepts search_notes with a query", () => {
     const result = validateToolCall("search_notes", { query: "subnetting" });
 

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { TASK_TYPES } from "@/lib/task";
+
 /**
  * The tools the assistant is allowed to request.
  *
@@ -12,7 +14,7 @@ import { z } from "zod";
  *    the app validates and executes.
  */
 
-const taskType = z.enum(["task", "assignment", "exam"]);
+const taskType = z.enum(TASK_TYPES);
 const taskPriority = z.enum(["low", "medium", "high"]);
 const taskStatus = z.enum([
   "not_started",
@@ -169,7 +171,7 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "get_tasks",
     description:
-      "List the student's tasks, assignments and exams, newest first. Optionally filter by status or course. Long lists are cut short, and the result says so; filter to see the rest.",
+      "List the student's tasks, assignments, quizzes and exams, newest first. Optionally filter by status or course. Long lists are cut short, and the result says so; filter to see the rest.",
     parameters: {
       type: "object",
       properties: {
@@ -196,7 +198,7 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "create_task",
     description:
-      "Create a task, assignment or exam for the student. Call this when they ask for one, and also when they mention a piece of work in passing, then say what you recorded. Fill in only the details they gave.",
+      "Create a task, assignment, quiz or exam for the student. Call this when they ask for one, and also when they mention a piece of work in passing, then say what you recorded. Fill in only the details they gave.",
     parameters: {
       type: "object",
       properties: {

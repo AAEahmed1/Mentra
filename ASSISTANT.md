@@ -85,7 +85,7 @@ The capped reads (`get_tasks`, `search_notes`, `search_memory`) return `{ <items
 
 Ten write tools.
 
-- **`create_task`**: title (required), description, due date, priority (default `medium`), estimated minutes, type (`task`, `assignment` or `exam`; default `task`) and course. It is refused if the course is not the student's. New work always starts as `not_started`. Its description tells the model to use it for work mentioned in passing as well as on request, matching the prompt.
+- **`create_task`**: title (required), description, due date, priority (default `medium`), estimated minutes, type (`task`, `assignment`, `quiz` or `exam`; default `task`) and course. It is refused if the course is not the student's. New work always starts as `not_started`. Its description tells the model to use it for work mentioned in passing as well as on request, matching the prompt.
 - **`update_task`**: title (not empty), due date, priority, estimate and status. Only named fields change.
 - **`complete_task`**: marks work completed, optionally recording how many minutes it actually took.
 - **`create_note`**: title and body, filed under a course, a piece of work, both or neither. It is refused if either link is not the student's.

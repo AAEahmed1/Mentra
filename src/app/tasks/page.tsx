@@ -42,7 +42,7 @@ export default async function TasksPage() {
   return (
     <AppShell
       title="Work"
-      lede="Everything due — tasks, assignments and exams, on a course line or on their own."
+      lede="Everything due — tasks, assignments, quizzes and exams, on a course line or on their own."
     >
       {tasks.length > 0 && (
         <section className="flex flex-col gap-4">
