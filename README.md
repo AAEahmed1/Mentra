@@ -11,6 +11,7 @@ Mentra is a web app that keeps a student's courses, deadlines and notes in one p
 - **Today.** A dashboard showing the term as a timeline, the single most important piece of work with a countdown, and the reason it was chosen, such as "Recommended because it's 4 days overdue and you estimated 75 min." Pick how much time you have (15 minutes to 90) and work that fits moves up.
 - **Explainable ranking.** Ordinary, tested code decides the order, not a model: overdue work first, then work due within three days, then later work, then undated work, ordered within each group by fit to your time, priority and date.
 - **Courses and terms.** Organise courses by semester, with codes, professors and credits.
+- **Timetable.** The running term's class times as a week, drawn to scale, with a per-day list on phones and a switcher when there is more than one term.
 - **Work.** Tasks, assignments and exams with due dates, priorities, estimates, statuses and topics to review. Overdue is worked out for you.
 - **Notes.** Searchable notes, filed under a course and attached to the work they're about.
 - **Ask Mentra.** An assistant on every page that reads your courses, work and notes through sixteen checked tools, files things you mention in passing, and explains its recommendations. Conversations are saved as separate threads.
@@ -28,8 +29,10 @@ Mentra is a web app that keeps a student's courses, deadlines and notes in one p
 | **Work** | **Notes** |
 | ![Courses](docs/screenshots/courses.jpg) | ![What Mentra knows](docs/screenshots/memory.jpg) |
 | **Courses** | **What Mentra knows** |
-| ![Landing page](docs/screenshots/landing.jpg) | ![Profile](docs/screenshots/profile.jpg) |
-| **Landing page** | **Profile** |
+| ![Timetable](docs/screenshots/timetable.jpg) | ![Profile](docs/screenshots/profile.jpg) |
+| **Timetable** | **Profile** |
+| ![Landing page](docs/screenshots/landing.jpg) | |
+| **Landing page** | |
 
 More in the [user guide](docs/user-guide.md).
 

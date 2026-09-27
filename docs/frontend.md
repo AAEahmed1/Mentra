@@ -22,6 +22,7 @@ All routes use the App Router under `src/app/`. Pages are server components unle
 | `/onboarding` | Yes | Optional program and institution. Redirects to `/dashboard` once a program is set. Continue and Skip both go to `/courses`. |
 | `/dashboard` | Yes | "Today": greeting, term timeline, time selector, today's entry and the ranked list. Reads `?minutes=`. |
 | `/courses` | Yes | Terms with their courses; add, edit and remove courses; add and delete terms. Reads `?sort=name\|code\|credits`. Each term is a collapsible `<details>`; terms that have ended start collapsed. Each course expands (`CoursePanel`, folded by default) into its class times — add, edit and remove, on one or more days — and its open coursework, with a quick-add form for both. |
+| `/timetable` | Yes | "Timetable": the running term's week of class times, drawn to scale on a grid (phone width switches to a per-day list), plus a form to add a class time. Reads `?term=<semesterId>`; a switcher appears once there is more than one term. With no term yet, points to Courses. |
 | `/tasks` | Yes | "Work": every task with complete, edit, remove and attached notes; add work. |
 | `/notes` | Yes | Notes with search (`?q=`), edit and remove; add a note. |
 | `/chats` | Yes | List of assistant conversations; New chat. |
@@ -61,7 +62,7 @@ The frame of every signed-in page: a **Skip to content** link (visible when focu
 
 ### `AppSidebar` (`src/components/app-sidebar.tsx`)
 
-- Links: Today, Courses, Work, Notes, Chats, What Mentra knows, Profile, each with a hand-drawn SVG icon and an explicit accessible name. The current section is filled with the green plate and marked `aria-current="page"`; nested pages such as `/chats/[id]` keep their section highlighted.
+- Links: Today, Courses, Timetable, Work, Notes, Chats, What Mentra knows, Profile, each with a hand-drawn SVG icon and an explicit accessible name. The current section is filled with the green plate and marked `aria-current="page"`; nested pages such as `/chats/[id]` keep their section highlighted.
 - On screens 768px and wider the sidebar is sticky and can collapse from 240px to 64px. The choice is stored in `localStorage` under `mentra:margin-collapsed` and read through `useSyncExternalStore`, so the server always renders it expanded and other tabs stay in sync.
 - On phones it becomes a drawer opened from a sticky top bar, over a scrim. While open it behaves as a dialog: focus moves into it, Tab wraps inside it, Escape closes it and focus returns to the open button, which carries `aria-expanded`. While closed it is hidden from the tab order.
 - The theme toggle and **Sign out** sit at the bottom (or in the phone top bar).
@@ -80,7 +81,7 @@ The frame of every signed-in page: a **Skip to content** link (visible when focu
 | `auth/` | `AuthShell`, `SignInForm`, `SignUpForm`, `GoogleSignInButton`, `SignOutButton` | Forms are client components calling the Better Auth client |
 | `onboarding/` | `OnboardingForm` | |
 | `courses/` | `CourseRow`, `CoursePanel`, `AddCourseworkForm`, `CourseSortControl`, `CreateCourseForm`, `CreateSemesterForm`, `DeleteCourseButton`, `DeleteSemesterButton` | |
-| `timetable/` | `MeetingRow`, `AddMeetingForm` | Class times; used on Courses and the timetable |
+| `timetable/` | `MeetingRow`, `AddMeetingForm`, `WeekGrid`, `DayList` | Class times; `MeetingRow`/`AddMeetingForm` are used on Courses and the timetable, `WeekGrid`/`DayList` only on the timetable |
 | `tasks/` | `TaskRow`, `CreateTaskForm`, `QuickNoteForm` | |
 | `notes/` | `NoteRow`, `CreateNoteForm` | |
 | `privacy/` | `MemoryRow`, `CreateMemoryForm`, `DeleteAccountForm` | |

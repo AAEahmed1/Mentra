@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { href: "/dashboard", label: "Today", icon: "today" },
   { href: "/courses", label: "Courses", icon: "courses" },
+  { href: "/timetable", label: "Timetable", icon: "timetable" },
   { href: "/tasks", label: "Work", icon: "work" },
   { href: "/notes", label: "Notes", icon: "notes" },
   { href: "/chats", label: "Chats", icon: "chats" },
@@ -40,6 +41,15 @@ function SectionIcon({ name }: { name: (typeof SECTIONS)[number]["icon"] }) {
       <>
         <path d="M3 4.5h5a2 2 0 0 1 2 2v8a1.5 1.5 0 0 0-1.5-1.5H3z" />
         <path d="M15 4.5h-5a2 2 0 0 0-2 2v8a1.5 1.5 0 0 1 1.5-1.5H15z" />
+      </>
+    ),
+    timetable: (
+      <>
+        <rect x="2.5" y="3.5" width="13" height="12" rx="1.5" />
+        <line x1="2.5" y1="7" x2="15.5" y2="7" />
+        <line x1="7" y1="7" x2="7" y2="15.5" />
+        <line x1="11" y1="7" x2="11" y2="15.5" />
+        <line x1="2.5" y1="11" x2="15.5" y2="11" />
       </>
     ),
     work: (
