@@ -74,7 +74,7 @@ export function AssistantPanel() {
               Ask Mentra
             </h2>
             <p className="text-xs text-muted-foreground">
-              Reads your courses, work and notes before answering
+              Reads your courses, timetable, work and notes
             </p>
           </div>
           <Button
