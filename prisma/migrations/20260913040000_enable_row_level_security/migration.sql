@@ -13,7 +13,15 @@
 -- Every new table needs the same line. src/lib/services/rls.test.ts fails
 -- when any table in public is left open.
 
-ALTER TABLE "_prisma_migrations" ENABLE ROW LEVEL SECURITY;
+-- Prisma's own history table exists in every real database, but not in the
+-- shadow database `prisma migrate dev` replays migrations into, so the
+-- statement is guarded: unguarded, it made every later `migrate dev` fail.
+DO $$
+BEGIN
+  IF to_regclass('"_prisma_migrations"') IS NOT NULL THEN
+    ALTER TABLE "_prisma_migrations" ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 ALTER TABLE "account" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "conversation" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "course" ENABLE ROW LEVEL SECURITY;
