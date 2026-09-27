@@ -230,6 +230,6 @@ npm run seed:demo -- --email you@example.com          # replace that account's d
 npm run seed:demo -- --email you@example.com --clear  # only remove that account's data
 ```
 
-It creates one semester spanning today, five courses, eleven pieces of work (overdue, due today, upcoming, undated, one in progress and one completed), three notes and four memories. Dates are relative to the UTC day it runs. It writes through the same services the app uses, runs with `tsx`, and never creates an account; sign up first.
+It creates one semester spanning today, five courses, a weekly class time for each of them (through `createMeetings`, one with two sessions), twelve pieces of work (overdue, due today, upcoming, undated, one in progress, one completed and two quizzes), three notes and four memories. Dates are relative to the UTC day it runs. It writes through the same services the app uses, runs with `tsx`, and never creates an account; sign up first.
 
-> **Warning:** every run first deletes the account's semesters, courses, work, notes and memories (in one transaction), with or without `--clear`, because seeding twice would otherwise duplicate everything. The script refuses to run unless `DATABASE_URL` points at `localhost`, `127.0.0.1` or `::1`; `--allow-remote` overrides that with a loud warning. Only seed a throwaway demo account.
+> **Warning:** every run first deletes the account's semesters, courses, class times (cascaded from their course), work, notes and memories (in one transaction), with or without `--clear`, because seeding twice would otherwise duplicate everything. The script refuses to run unless `DATABASE_URL` points at `localhost`, `127.0.0.1` or `::1`; `--allow-remote` overrides that with a loud warning. Only seed a throwaway demo account.

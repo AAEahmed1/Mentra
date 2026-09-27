@@ -12,9 +12,9 @@ Mentra is a web app that keeps a student's courses, deadlines and notes in one p
 - **Explainable ranking.** Ordinary, tested code decides the order, not a model: overdue work first, then work due within three days, then later work, then undated work, ordered within each group by fit to your time, priority and date.
 - **Courses and terms.** Organise courses by semester, with codes, professors and credits.
 - **Timetable.** The running term's class times as a week, drawn to scale, with a per-day list on phones and a switcher when there is more than one term.
-- **Work.** Tasks, assignments and exams with due dates, priorities, estimates, statuses and topics to review. Overdue is worked out for you.
+- **Work.** Tasks, assignments, quizzes and exams with due dates, priorities, estimates, statuses and topics to review. Overdue is worked out for you.
 - **Notes.** Searchable notes, filed under a course and attached to the work they're about.
-- **Ask Mentra.** An assistant on every page that reads your courses, work and notes through sixteen checked tools, files things you mention in passing, and explains its recommendations. Conversations are saved as separate threads.
+- **Ask Mentra.** An assistant on every page that reads your courses, work, notes and class times through seventeen checked tools, files things you mention in passing, and explains its recommendations. Conversations are saved as separate threads.
 - **What Mentra knows.** Every fact the assistant has learned about you, in plain language, with one-click forgetting and full account deletion.
 - **Profile.** Edit your details and change your password.
 - **Light and dark themes**, a layout that works on phones, and a considered visual design, "The Almanac".

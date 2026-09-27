@@ -120,9 +120,9 @@ Not covered by automated tests: pages and components, server actions, the assist
 npm run seed:demo -- --email you@example.com
 ```
 
-Fills an **existing** account with a nursing student's term: one semester, five courses, eleven pieces of work (overdue, due today, upcoming, undated, in progress, completed), three notes and four memories. Dates are relative to today, so the dashboard always has something in every state. Add `--clear` to remove the data instead.
+Fills an **existing** account with a nursing student's term: one semester, five courses with a weekly class time each, twelve pieces of work (overdue, due today, upcoming, undated, in progress, completed, two quizzes), three notes and four memories. Dates are relative to today, so the dashboard always has something in every state. Add `--clear` to remove the data instead.
 
-> **Warning:** every run first deletes that account's terms, courses, work, notes and memories. The script refuses to run unless `DATABASE_URL` is a local database; `--allow-remote` overrides that, loudly. Use it only on a throwaway account.
+> **Warning:** every run first deletes that account's terms, courses, class times, work, notes and memories. The script refuses to run unless `DATABASE_URL` is a local database; `--allow-remote` overrides that, loudly. Use it only on a throwaway account.
 
 ## Working on the code
 
