@@ -18,10 +18,12 @@ import {
 import { validateToolCall, type ValidatedToolCall } from "@/lib/ai/tools";
 
 /** Runs a call the way the assistant would: validated first, then executed. */
-async function run(userId: string, name: string, args: unknown) {
+async function run(userId: string, name: string, args: unknown, now?: Date) {
   const validated = validateToolCall(name, args);
   if (!validated.ok) throw new Error(validated.error);
-  return executeToolCall(userId, validated as ValidatedToolCall);
+  return now
+    ? executeToolCall(userId, validated as ValidatedToolCall, now)
+    : executeToolCall(userId, validated as ValidatedToolCall);
 }
 
 let userId: string;
@@ -254,7 +256,12 @@ describe("get_timetable — when the student's classes are", () => {
       location: "Lab B",
     });
 
-    const [meeting] = (await run(userId, "get_timetable", {})) as Record<string, unknown>[];
+    const [meeting] = (await run(
+      userId,
+      "get_timetable",
+      {},
+      new Date("2026-09-29T00:00:00Z") // a Tuesday inside the Autumn term
+    )) as Record<string, unknown>[];
 
     expect(meeting).toMatchObject({
       courseId,
@@ -265,7 +272,27 @@ describe("get_timetable — when the student's classes are", () => {
       start: "14:00",
       end: "15:50",
       location: "Lab B",
+      termRunningToday: true,
     });
+  });
+
+  test("marks a class from a term not running today, so an ended or future term isn't read as this week", async () => {
+    await createMeetings(userId, courseId, {
+      kind: "lecture",
+      weekdays: [2],
+      startMinute: 600,
+      durationMinutes: 60,
+      location: undefined,
+    });
+
+    const [meeting] = (await run(
+      userId,
+      "get_timetable",
+      {},
+      new Date("2027-01-05T00:00:00Z") // after the Autumn term's endDate
+    )) as Record<string, unknown>[];
+
+    expect(meeting).toMatchObject({ termRunningToday: false });
   });
 });
 

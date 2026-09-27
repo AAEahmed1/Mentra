@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import {
+  useState,
+  useSyncExternalStore,
+  useTransition,
+  type FormEvent,
+} from "react";
 
 import type { RowActionResult } from "@/lib/action-state";
 
@@ -104,6 +109,21 @@ export function useQuickForm(action: FormAction) {
   const [errors, setErrors] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
+  // These forms render server-side with no `action`/`method`, so `onSubmit`
+  // is the only thing stopping a submit — and it does nothing until React
+  // has hydrated and attached the handler. Submit (via Enter or the button)
+  // before then falls through to the browser's default: a native GET on the
+  // current URL, which puts every field's value in the query string. Gating
+  // the submit button on hydration closes that window; `isHydrated` is false
+  // on the server and on the client's first render, then flips true once
+  // hydration has run, so the button is only ever enabled after `onSubmit`
+  // is live.
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -120,5 +140,5 @@ export function useQuickForm(action: FormAction) {
     });
   }
 
-  return { formKey, errors, isPending, onSubmit };
+  return { formKey, errors, isPending, isHydrated, onSubmit };
 }

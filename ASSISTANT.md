@@ -80,7 +80,7 @@ The capped reads (`get_tasks`, `search_notes`, `search_memory`) return `{ <items
 - **`search_notes`**: notes matched case-insensitively by `query` in the title or body, or, given a `taskId`, the notes attached to that piece of work, newest first, **at most 20**. Each result includes the body, `courseName` and `taskId`. A body over 2000 characters is cut there and ends with a `[shortened: N more characters not shown ...]` marker; the `update_note` description tells the model not to replace a body it only saw shortened. With no arguments it returns the newest notes.
 - **`search_memory`**: what Mentra has stored about the student, newest first, **at most 200**, with a note pointing at the "What Mentra knows" page when there are more. Memories are already in the prompt, so the model is told to call this only when the prompt says the list was truncated.
 - **`list_semesters`**: the student's terms, with ids and start and end dates.
-- **`get_timetable`**: every class time the student has, from **all** terms, not capped. Each item has the meeting id, course id and name, term name, kind, weekday name, and start and end time as `HH:MM` on the student's own clock, plus location.
+- **`get_timetable`**: every class time the student has, from **all** terms, not capped. Each item has the meeting id, course id and name, term name, kind, weekday name, start and end time as `HH:MM` on the student's own clock, location, and `termRunningToday` — whether that class's term covers the same `now` the prompt's date is built from — so a class from a term that has ended or has not started yet can be told apart from one happening this week.
 
 ## What it can write
 
@@ -112,6 +112,7 @@ The prompt in `system-prompt.ts` sets these rules. They are instructions to a mo
 - **Check results.** If a tool reports `created`, `updated` or `deleted` as false, it says the action did not happen and why.
 - **No promises.** It must not say it is about to do something. It either reports what a tool already did, in the past tense, or asks a question.
 - **Memory.** It uses what the prompt says it already knows rather than asking again, and saves durable facts with `save_memory`, marked `explicit` only when the student said them.
+- **Class times.** Class times come from `get_timetable`, never invented. Today's weekday is given in the prompt; the model uses it, together with each class's `termRunningToday`, to answer "what do I have today" without counting a class from an ended or not-yet-started term.
 - **Tone and format.** Calm, brief and concrete, with no exclamation marks and no praise for ordinary things. Plain text only, no markdown.
 
 ## What varies per turn
@@ -129,7 +130,7 @@ The system prompt is rebuilt for every request from two things the model must no
 - **Unfile a note.** `update_note` can move a note to a different course or piece of work, but not clear the link.
 - **Read or change the student's profile or account.** There is no tool for names, program, institution, email, password or deleting the account.
 - **Touch grades.** There is no grade field in the schema.
-- **Create, change or remove class times.** `createMeetings`, `updateMeeting` and `deleteMeeting` exist as services but have no tools; the timetable is edited on the Courses and Timetable pages.
+- **Create, change or remove class times.** `createMeetings`, `updateMeeting` and `deleteMeeting` exist as services but have no tools; class times are added on the Courses and Timetable pages, and edited or removed only on the Courses page.
 - **See tool results from earlier turns.** Only the text of past messages is kept.
 - **See anything outside its seventeen tools.** It cannot read the page the student is looking at, browse the web, open files, or see other conversations.
 - **Reach another student's data.** No tool accepts a `userId`. Ownership is bound from the session in the route handler and passed to `executeToolCall` separately from the model's arguments, and a `userId` smuggled into arguments is stripped during validation. A test over `TOOL_NAMES` fails if a new tool breaks this.
