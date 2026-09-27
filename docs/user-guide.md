@@ -39,10 +39,12 @@ The dashboard, at `/dashboard`, is built from your own dates and estimates.
 - **Now.** Choose how much time you have (Any, 15m, 30m, 1h or 90m). Work that fits the time moves up; nothing is hidden.
 - **Today's entry.** The single most important piece of work, with a countdown ("4 days over", "0 due today", "5 days left"), its course, estimate, and the reason it was chosen, such as "Recommended because it's 4 days overdue and you estimated 75 min." Buttons take you to your work or to write a note.
 - **After that.** The next six pieces of work in order, with their due labels.
+- **Classes today.** Today's classes in time order, with their time range, kind and location; a class that has already ended is greyed out. A Timetable link sits in the heading. It only appears on a day a term is running and you have a class on it.
+- **Coming up.** Open work due from today through the next two weeks, grouped by day, each item showing its type (Exam, Quiz, Assignment or Task) and course. Overdue work is left out — it already leads the page above — and so is anything completed.
 
 How the order is decided is described in [domain-logic.md](domain-logic.md#the-recommendation-engine). In short: overdue work first (most overdue first), then work due within three days, then later work, then undated work; within each group, work that fits your time, then higher priority, then the earlier date.
 
-With no open work, Today offers buttons to add a course or add work.
+With no open work, Today offers buttons to add a course or add work; Classes today and Coming up still show when they have something to show.
 
 A dark theme is available everywhere:
 

@@ -9,13 +9,19 @@ import { greetingForHour } from "@/lib/greeting";
 import { listTasksForUser } from "@/lib/services/task";
 import { listCoursesForUser } from "@/lib/services/course";
 import { listNotesForUser } from "@/lib/services/note";
+import { listMeetingsForUser } from "@/lib/services/meeting";
+import { listSemestersForUser } from "@/lib/services/semester";
 import { rankTasks } from "@/lib/recommendations";
 import { explainRecommendation } from "@/lib/recommendation-reason";
+import { classesToday, minuteOfDay } from "@/lib/timetable";
+import { comingUp } from "@/lib/coming-up";
 import { TermScore } from "@/components/term-score";
 import { DurationBar } from "@/components/duration-bar";
 import { TimeAvailable } from "@/components/time-available";
 import { RunningHead } from "@/components/running-head";
 import { StateLamp } from "@/components/state-lamp";
+import { ClassesToday } from "@/components/timetable/classes-today";
+import { ComingUp } from "@/components/coming-up";
 import { parseAvailableMinutes } from "@/lib/available-minutes";
 import { countdown, dueLabel } from "@/lib/due-label";
 
@@ -44,7 +50,7 @@ export default async function DashboardPage({
   const { minutes } = await searchParams;
   const availableMinutes = parseAvailableMinutes(minutes);
 
-  const [user, tasks, courses, notes] = await Promise.all([
+  const [user, tasks, courses, notes, meetings, semesters] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { name: true },
@@ -52,9 +58,14 @@ export default async function DashboardPage({
     listTasksForUser(userId),
     listCoursesForUser(userId),
     listNotesForUser(userId),
+    listMeetingsForUser(userId),
+    listSemestersForUser(userId),
   ]);
 
   const courseById = new Map(courses.map((course) => [course.id, course]));
+  const courseNameById = new Map(courses.map((course) => [course.id, course.name]));
+  const todaysClasses = classesToday(meetings, semesters, now);
+  const upcoming = comingUp(tasks, now);
 
   // How many notes hang off each piece of work, for the table's hover detail.
   const noteCountByTaskId = new Map<string, number>();
@@ -104,9 +115,7 @@ export default async function DashboardPage({
       {struck && (
         <TermScore
           ranked={ranked}
-          courseNameById={
-            new Map(courses.map((course) => [course.id, course.name]))
-          }
+          courseNameById={courseNameById}
           noteCountByTaskId={noteCountByTaskId}
           now={now}
         />
@@ -294,6 +303,14 @@ export default async function DashboardPage({
             </Link>
           </div>
         </section>
+      )}
+
+      {todaysClasses.length > 0 && (
+        <ClassesToday meetings={todaysClasses} nowMinute={minuteOfDay(now)} />
+      )}
+
+      {upcoming.length > 0 && (
+        <ComingUp days={upcoming} courseNameById={courseNameById} />
       )}
     </AppShell>
   );
