@@ -10,6 +10,15 @@ import { cn } from "@/lib/utils";
 /** Height of one hour on the grid. */
 const HOUR_REM = 3.5;
 
+/** From this length a block is tall enough to give kind and place a line. */
+const ROOMY_MINUTES = 60;
+
+function details(meeting: TimetableMeeting): string {
+  return [MEETING_KIND_LABELS[meeting.kind], meeting.location]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 /**
  * The week, drawn to scale: each class is as tall as it is long. Hidden at
  * phone width, where `DayList` prints the same week as lines instead.
@@ -91,9 +100,11 @@ export function WeekGrid({
                 width: `${100 / lanes}%`,
               }}
             >
-              {/* The visible text abbreviates to the course code and splits
-                  time from kind/location onto separate lines; screen readers
-                  get the day and full course name up front instead. */}
+              {/* The visible text abbreviates to the course code; screen
+                  readers get the day and full course name up front instead.
+                  A class of an hour or more is tall enough for three lines,
+                  so kind and place get their own line and are not cut short;
+                  a shorter one folds them onto the time's line to fit. */}
               <span className="sr-only">
                 {weekdayLabel(day.weekday, "long")}, {meeting.course.name},{" "}
               </span>
@@ -101,9 +112,11 @@ export function WeekGrid({
               <p data-figures className="truncate text-muted-foreground">
                 {formatClockTime(meeting.startMinute)}–
                 {formatClockTime(meeting.startMinute + meeting.durationMinutes)}
-                {" · "}
-                {[MEETING_KIND_LABELS[meeting.kind], meeting.location].filter(Boolean).join(" · ")}
+                {meeting.durationMinutes < ROOMY_MINUTES && ` · ${details(meeting)}`}
               </p>
+              {meeting.durationMinutes >= ROOMY_MINUTES && (
+                <p className="truncate text-muted-foreground">{details(meeting)}</p>
+              )}
             </div>
           ))}
         </div>
