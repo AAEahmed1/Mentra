@@ -22,7 +22,7 @@ Signed-out visitors see the landing page. It explains what Mentra does with a li
 1. **Create an account** with a name, email and password (at least 8 characters), or with Google when it is configured.
 2. **Say what you study.** A new account, whether made with email or Google, is asked for a program and institution. Both are optional, and you can skip the step.
 3. **Add a term and its courses** on the Courses page.
-4. **Add your work**: tasks, assignments and exams, with due dates and estimates.
+4. **Add your work**: tasks, assignments, quizzes and exams, with due dates and estimates.
 5. **Open Today** to see what to work on first and why.
 
 ![Sign in](screenshots/sign-in.jpg)
@@ -66,7 +66,7 @@ A dark theme is available everywhere:
 
 `/tasks` lists every piece of work, newest first, including completed (struck through) and cancelled work.
 
-- **Add work** with a title, and optionally a description, course, type (task, assignment or exam), due date, priority, estimated minutes and topics to review.
+- **Add work** with a title, and optionally a description, course, type (task, assignment, quiz or exam), due date, priority, estimated minutes and topics to review.
 - Each row shows its course, due date, priority (when not medium), estimate, and either its status or an **Overdue** marker. Overdue is worked out from the due date; you never set it.
 - **Complete** marks open work as done. **Edit** changes any field, including the status (not started, in progress, paused, completed, cancelled) and how many minutes it actually took; emptying a field, such as the due date or choosing "No course", clears it. **Remove** asks "Remove for good?" before deleting; notes attached to it are kept.
 - **Add a note** opens the notes attached to that piece of work and a quick form to add one.

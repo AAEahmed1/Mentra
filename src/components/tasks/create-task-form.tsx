@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { createTaskAction, type TaskActionState } from "@/lib/actions/task";
+import { TASK_TYPES, TASK_TYPE_LABELS } from "@/lib/task";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,9 +55,11 @@ export function CreateTaskForm({ courses }: { courses: CourseOption[] }) {
         <div className="flex flex-col gap-2">
           <Label htmlFor="task-type">Type</Label>
           <Select id="task-type" name="type" defaultValue="task">
-            <option value="task">Task</option>
-            <option value="assignment">Assignment</option>
-            <option value="exam">Exam</option>
+            {TASK_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {TASK_TYPE_LABELS[type]}
+              </option>
+            ))}
           </Select>
         </div>
       </div>
@@ -93,7 +96,7 @@ export function CreateTaskForm({ courses }: { courses: CourseOption[] }) {
       <div className="flex flex-col gap-2">
         <Label htmlFor="task-topics">
           Topics to review{" "}
-          <span className="text-muted-foreground">(exams, optional)</span>
+          <span className="text-muted-foreground">(quizzes and exams, optional)</span>
         </Label>
         <Input id="task-topics" name="topicsToReview" />
       </div>

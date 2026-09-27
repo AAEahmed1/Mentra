@@ -3,6 +3,7 @@
 import { updateTaskAction, completeTaskAction, deleteTaskAction } from "@/lib/actions/task";
 import { useInlineEdit, useRowAction } from "@/lib/use-row-actions";
 import { getEffectiveStatus } from "@/lib/task-status";
+import { TASK_TYPES, TASK_TYPE_LABELS } from "@/lib/task";
 import type { Note, Task } from "@/generated/prisma/client";
 import {
   EditActions,
@@ -235,9 +236,11 @@ export function TaskRow({
               name="type"
               defaultValue={task.type}
             >
-              <option value="task">Task</option>
-              <option value="assignment">Assignment</option>
-              <option value="exam">Exam</option>
+              {TASK_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {TASK_TYPE_LABELS[type]}
+                </option>
+              ))}
             </Select>
           </div>
           <div className="flex flex-col gap-2">
@@ -317,7 +320,7 @@ export function TaskRow({
         <div className="flex flex-col gap-2">
           <Label htmlFor={`edit-topics-${task.id}`}>
             Topics to review{" "}
-            <span className="text-muted-foreground">(exams, optional)</span>
+            <span className="text-muted-foreground">(quizzes and exams, optional)</span>
           </Label>
           <Input
             id={`edit-topics-${task.id}`}

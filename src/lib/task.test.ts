@@ -3,6 +3,8 @@ import {
   parseTaskCompletion,
   parseTaskInput,
   parseTaskUpdate,
+  TASK_TYPE_LABELS,
+  TASK_TYPES,
 } from "@/lib/task";
 
 const baseInput = {
@@ -175,6 +177,32 @@ describe("task limits", () => {
     expect(
       parseTaskInput({ ...baseInput, estimatedDuration: "20000" }).success
     ).toBe(false);
+  });
+});
+
+describe("quizzes", () => {
+  test("accepts quiz as a type of work", () => {
+    const result = parseTaskInput({
+      title: "Week 3 quiz",
+      description: null,
+      dueDate: "2026-10-02",
+      priority: null,
+      estimatedDuration: null,
+      type: "quiz",
+      topicsToReview: null,
+      courseId: null,
+    });
+
+    expect(result.success && result.data.type).toBe("quiz");
+  });
+
+  test("labels every type", () => {
+    expect(TASK_TYPES.map((type) => TASK_TYPE_LABELS[type])).toEqual([
+      "Task",
+      "Assignment",
+      "Quiz",
+      "Exam",
+    ]);
   });
 });
 
