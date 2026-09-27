@@ -5,8 +5,9 @@
  *   npm run seed:demo -- --email you@example.com
  *   npm run seed:demo -- --email you@example.com --clear
  *
- * Every run REPLACES the account's terms, courses, work, notes and memories:
- * they are deleted first (in one transaction), then the demo term is written.
+ * Every run REPLACES the account's terms, courses, class times, work, notes
+ * and memories: they are deleted first (in one transaction), then the demo
+ * term is written.
  * Topping up instead would stack a second copy of everything on the first.
  * `--clear` stops after the delete. Only point it at an account whose data
  * you are willing to lose.
@@ -36,6 +37,7 @@ import "dotenv/config";
 import { prisma } from "../src/lib/prisma";
 import { createSemester } from "../src/lib/services/semester";
 import { createCourse } from "../src/lib/services/course";
+import { createMeetings } from "../src/lib/services/meeting";
 import { createTask } from "../src/lib/services/task";
 import { createNote } from "../src/lib/services/note";
 import { createMemory } from "../src/lib/services/memory";
@@ -83,8 +85,25 @@ const TASKS = [
   { title: "Care plan case study", courseIndex: 4, due: 15, minutes: 180, priority: "high", type: "assignment" },
   { title: "Placement reflective essay", courseIndex: null, due: 9, minutes: 120, priority: "medium", type: "assignment" },
   { title: "Renew library loans", courseIndex: null, due: null, minutes: 10, priority: "low", type: "task" },
-  { title: "Anatomy quiz 1", courseIndex: 2, due: -9, minutes: 40, priority: "medium", type: "exam", status: "completed", actual: 55 },
+  { title: "Anatomy quiz 1", courseIndex: 2, due: -9, minutes: 40, priority: "medium", type: "quiz", status: "completed", actual: 55 },
+  { title: "Pharmacology quiz 2", courseIndex: 0, due: 4, minutes: 30, priority: "medium", type: "quiz" },
 ] as const;
+
+/** A plausible week: every course meets, one has a lab, nothing overlaps. */
+const MEETINGS: {
+  courseIndex: number;
+  kind: "lecture" | "lab" | "tutorial" | "seminar" | "other";
+  weekdays: number[];
+  start: string;
+  minutes: number;
+  location?: string;
+}[] = [
+  { courseIndex: 0, kind: "lecture", weekdays: [1, 3], start: "09:00", minutes: 80, location: "Hall A" },
+  { courseIndex: 1, kind: "lab", weekdays: [2], start: "13:00", minutes: 170, location: "Sim Suite" },
+  { courseIndex: 2, kind: "lecture", weekdays: [2, 4], start: "10:30", minutes: 80, location: "Hall B" },
+  { courseIndex: 3, kind: "seminar", weekdays: [4], start: "14:00", minutes: 110, location: "Room 3.12" },
+  { courseIndex: 4, kind: "tutorial", weekdays: [5], start: "11:00", minutes: 50 },
+];
 
 const NOTES = [
   { title: "Dosage formula", courseIndex: 0, body: "Required dose divided by stock dose, multiplied by stock volume. Check units before anything else — most errors in the worked examples came from mg vs mcg, not the arithmetic." },
@@ -174,6 +193,18 @@ async function main() {
     courseIds.push(created.data.id);
   }
 
+  for (const meeting of MEETINGS) {
+    const [hours, minutes] = meeting.start.split(":").map(Number);
+    const created = await createMeetings(user.id, courseIds[meeting.courseIndex], {
+      kind: meeting.kind,
+      weekdays: meeting.weekdays,
+      startMinute: hours * 60 + minutes,
+      durationMinutes: meeting.minutes,
+      location: meeting.location,
+    });
+    if (!created.success) throw new Error("Could not seed class times.");
+  }
+
   for (const task of TASKS) {
     const created = await createTask(user.id, {
       title: task.title,
@@ -219,7 +250,9 @@ async function main() {
   }
 
   console.log(`Seeded ${email}:`);
-  console.log(`  1 term, ${COURSES.length} courses, ${TASKS.length} pieces of work,`);
+  console.log(
+    `  1 term, ${COURSES.length} courses, ${MEETINGS.length} weekly class times, ${TASKS.length} pieces of work,`
+  );
   console.log(`  ${NOTES.length} notes, ${MEMORIES.length} memories.`);
   console.log("Run again with --clear to remove all of it.");
 }
