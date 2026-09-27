@@ -46,6 +46,7 @@ Then edit it:
 - Set `DATABASE_URL` to the `mentra` server's URL.
 - **Delete the `DIRECT_URL` line.** If it is present, even empty, the Prisma CLI will not use your local database.
 - Set `TEST_DATABASE_URL` to the `mentra-test` server's URL.
+- Set `SHADOW_DATABASE_URL` to the `mentra` server's URL with the port raised by one (database on 51214 means shadow on 51215). Each Prisma dev server runs an empty shadow database there for `prisma migrate dev`; without it, Migrate copies `template1` — the app's own database — as its shadow and fails with "relation already exists".
 - Set `BETTER_AUTH_URL="http://localhost:3000"`.
 - Set `BETTER_AUTH_SECRET` to the output of `openssl rand -base64 32`.
 - Optionally set `OPENAI_API_KEY` for the assistant, and `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Google sign-in (register `http://localhost:3000/api/auth/callback/google` in Google Cloud Console).
@@ -120,7 +121,7 @@ Not covered by automated tests: pages and components, server actions, the assist
 npm run seed:demo -- --email you@example.com
 ```
 
-Fills an **existing** account with a nursing student's term: one semester, five courses with a weekly class time each, twelve pieces of work (overdue, due today, upcoming, undated, in progress, completed, two quizzes), three notes and four memories. Dates are relative to today, so the dashboard always has something in every state. Add `--clear` to remove the data instead.
+Fills an **existing** account with a nursing student's term: one semester, five courses with a weekly class time each, twelve pieces of work (overdue, due today, upcoming, undated, in progress, completed, two quizzes), three notes and four memories. Dates are relative to today on this computer's calendar, so the dashboard always has something in every state. Add `--clear` to remove the data instead.
 
 > **Warning:** every run first deletes that account's terms, courses, class times, work, notes and memories. The script refuses to run unless `DATABASE_URL` is a local database; `--allow-remote` overrides that, loudly. Use it only on a throwaway account.
 

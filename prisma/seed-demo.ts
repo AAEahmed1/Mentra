@@ -58,11 +58,17 @@ function databaseHost(raw: string | undefined): string | null {
   }
 }
 
-const DAY = 86_400_000;
+/**
+ * A calendar date `offsetDays` from today, stored as UTC midnight like every
+ * due date. "Today" is this machine's local date, not UTC's: the app counts
+ * days on the student's own calendar, so seeding at 21:00 in Toronto (already
+ * tomorrow in UTC) would otherwise print "due today" work as due tomorrow.
+ */
 const at = (offsetDays: number) => {
-  const date = new Date(Date.now() + offsetDays * DAY);
-  date.setUTCHours(0, 0, 0, 0);
-  return date;
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + offsetDays)
+  );
 };
 
 const COURSES = [
