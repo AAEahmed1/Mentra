@@ -20,12 +20,15 @@ export function FiledRow({
   children,
   actions,
   error = null,
+  detail,
 }: {
   align?: "center" | "start";
   children: ReactNode;
   actions: ReactNode;
   /** Why a row action (complete, remove, forget) did not happen. */
   error?: string | null;
+  /** Opens beneath the row across its full width, such as a course's detail. */
+  detail?: ReactNode;
 }) {
   return (
     <li
@@ -43,6 +46,7 @@ export function FiledRow({
       <div className="flex items-center gap-1 opacity-100 transition-opacity focus-within:opacity-100 md:pointer-fine:opacity-0 md:pointer-fine:group-hover:opacity-100">
         {actions}
       </div>
+      {detail && <div className="w-full">{detail}</div>}
       {error && (
         <p role="alert" className="w-full text-xs text-destructive">
           {error}

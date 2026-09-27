@@ -4,14 +4,18 @@ import { requireUserId } from "@/lib/session";
 import { getStudentTime } from "@/lib/student-time";
 import { calendarDaysUntil } from "@/lib/task-status";
 import { parseCourseSort, sortCourses } from "@/lib/course-sort";
+import { courseworkFor } from "@/lib/coming-up";
 import { AppShell } from "@/components/app-shell";
 import { RunningHead } from "@/components/running-head";
 import { listSemestersForUser } from "@/lib/services/semester";
 import { listCoursesForSemester } from "@/lib/services/course";
+import { listMeetingsForUser } from "@/lib/services/meeting";
+import { listTasksForUser } from "@/lib/services/task";
 import { CreateSemesterForm } from "@/components/courses/create-semester-form";
 import { CreateCourseForm } from "@/components/courses/create-course-form";
 import { DeleteSemesterButton } from "@/components/courses/delete-semester-button";
 import { CourseRow } from "@/components/courses/course-row";
+import { CoursePanel } from "@/components/courses/course-panel";
 import { CourseSortControl } from "@/components/courses/course-sort-control";
 
 export const metadata: Metadata = {
@@ -32,7 +36,11 @@ export default async function CoursesPage({
   const { now } = await getStudentTime();
   const sort = parseCourseSort((await searchParams).sort);
 
-  const semesters = await listSemestersForUser(userId);
+  const [semesters, meetings, tasks] = await Promise.all([
+    listSemestersForUser(userId),
+    listMeetingsForUser(userId),
+    listTasksForUser(userId),
+  ]);
   const semestersWithCourses = await Promise.all(
     semesters.map(async (semester) => ({
       semester,
@@ -102,7 +110,20 @@ export default async function CoursesPage({
               {courses.length > 0 && (
                 <ul className="flex flex-col">
                   {courses.map((course) => (
-                    <CourseRow key={course.id} course={course} />
+                    <CourseRow
+                      key={course.id}
+                      course={course}
+                      panel={
+                        <CoursePanel
+                          courseId={course.id}
+                          meetings={meetings.filter(
+                            (meeting) => meeting.courseId === course.id
+                          )}
+                          coursework={courseworkFor(tasks, course.id)}
+                          now={now}
+                        />
+                      }
+                    />
                   ))}
                 </ul>
               )}
