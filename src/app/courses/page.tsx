@@ -116,6 +116,7 @@ export default async function CoursesPage({
                       panel={
                         <CoursePanel
                           courseId={course.id}
+                          courseName={course.name}
                           meetings={meetings.filter(
                             (meeting) => meeting.courseId === course.id
                           )}

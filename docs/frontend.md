@@ -81,7 +81,7 @@ The frame of every signed-in page: a **Skip to content** link (visible when focu
 | `auth/` | `AuthShell`, `SignInForm`, `SignUpForm`, `GoogleSignInButton`, `SignOutButton` | Forms are client components calling the Better Auth client |
 | `onboarding/` | `OnboardingForm` | |
 | `courses/` | `CourseRow`, `CoursePanel`, `AddCourseworkForm`, `CourseSortControl`, `CreateCourseForm`, `CreateSemesterForm`, `DeleteCourseButton`, `DeleteSemesterButton` | |
-| `timetable/` | `MeetingRow`, `AddMeetingForm`, `WeekGrid`, `DayList`, `ClassesToday` | Class times; `MeetingRow`/`AddMeetingForm` are used on Courses and the timetable, `WeekGrid`/`DayList` only on the timetable, `ClassesToday` only on Today |
+| `timetable/` | `MeetingRow`, `AddMeetingForm`, `WeekGrid`, `DayList`, `ClassesToday` | Class times; `MeetingRow` is used only on Courses (the timetable page only adds class times), `AddMeetingForm` is used on Courses and the timetable, `WeekGrid`/`DayList` only on the timetable, `ClassesToday` only on Today |
 | `tasks/` | `TaskRow`, `CreateTaskForm`, `QuickNoteForm` | |
 | `notes/` | `NoteRow`, `CreateNoteForm` | |
 | `privacy/` | `MemoryRow`, `CreateMemoryForm`, `DeleteAccountForm` | |

@@ -16,11 +16,13 @@ import { AddCourseworkForm } from "@/components/courses/add-coursework-form";
  */
 export function CoursePanel({
   courseId,
+  courseName,
   meetings,
   coursework,
   now,
 }: {
   courseId: string;
+  courseName: string;
   meetings: MeetingWithCourse[];
   coursework: Task[];
   now: Date;
@@ -47,6 +49,7 @@ export function CoursePanel({
         >
           <polyline points="4.5,2.5 8,6 4.5,9.5" />
         </svg>
+        <span className="sr-only">{courseName}, </span>
         <span data-figures>{summary}</span>
       </summary>
 

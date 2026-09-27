@@ -30,7 +30,12 @@ export function AddMeetingForm({
   const form = useQuickForm(createMeetingAction);
 
   return (
-    <form key={form.formKey} onSubmit={form.onSubmit} className="flex flex-col gap-3">
+    <form
+      key={form.formKey}
+      method="post"
+      onSubmit={form.onSubmit}
+      className="flex flex-col gap-3"
+    >
       {courseId ? (
         <input type="hidden" name="courseId" value={courseId} />
       ) : (
@@ -105,7 +110,11 @@ export function AddMeetingForm({
 
       <FormErrors errors={form.errors} />
 
-      <Button type="submit" disabled={form.isPending} variant="outline">
+      <Button
+        type="submit"
+        disabled={!form.isHydrated || form.isPending}
+        variant="outline"
+      >
         {form.isPending ? "Adding…" : "Add class time"}
       </Button>
     </form>

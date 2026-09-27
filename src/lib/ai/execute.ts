@@ -9,6 +9,7 @@ import { createCourse, listCoursesForUser } from "@/lib/services/course";
 import { createSemester, listSemestersForUser } from "@/lib/services/semester";
 import { listMeetingsForUser } from "@/lib/services/meeting";
 import { formatClockTime, weekdayLabel } from "@/lib/meeting";
+import { termRunsOn } from "@/lib/timetable";
 import {
   createNote,
   deleteNote,
@@ -117,18 +118,26 @@ export async function executeToolCall(
         listSemestersForUser(userId),
       ]);
       // Days and times in words, so the model never does clock arithmetic.
-      const terms = new Map(semesters.map((term) => [term.id, term.name]));
-      return meetings.map((meeting) => ({
-        id: meeting.id,
-        courseId: meeting.course.id,
-        courseName: meeting.course.name,
-        semesterName: terms.get(meeting.course.semesterId) ?? null,
-        kind: meeting.kind,
-        day: weekdayLabel(meeting.weekday, "long"),
-        start: formatClockTime(meeting.startMinute),
-        end: formatClockTime(meeting.startMinute + meeting.durationMinutes),
-        location: meeting.location,
-      }));
+      const terms = new Map(semesters.map((term) => [term.id, term]));
+      return meetings.map((meeting) => {
+        const term = terms.get(meeting.course.semesterId);
+        return {
+          id: meeting.id,
+          courseId: meeting.course.id,
+          courseName: meeting.course.name,
+          semesterName: term?.name ?? null,
+          // Whether this class's term is running today, on the same `now` the
+          // assistant answers "what should I do?" from — otherwise a class
+          // from a term that already ended or has not started yet reads the
+          // same as one happening this week.
+          termRunningToday: term ? termRunsOn(term, now) : false,
+          kind: meeting.kind,
+          day: weekdayLabel(meeting.weekday, "long"),
+          start: formatClockTime(meeting.startMinute),
+          end: formatClockTime(meeting.startMinute + meeting.durationMinutes),
+          location: meeting.location,
+        };
+      });
     }
 
     case "get_tasks": {

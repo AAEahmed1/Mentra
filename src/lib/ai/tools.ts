@@ -172,7 +172,7 @@ export const toolDefinitions: ToolDefinition[] = [
   {
     name: "get_timetable",
     description:
-      "List the student's weekly class times across all of their terms: course, term, kind of class, weekday, start and end time (24-hour, their own clock) and location. Use it for questions about when or where their classes are, or what they have on a given day.",
+      "List the student's weekly class times across all of their terms: course, term, kind of class, weekday, start and end time (24-hour, their own clock), location, and termRunningToday (whether that class's term covers today). Use termRunningToday to leave out classes from a term that has ended or has not started when answering what they have today. Use it for questions about when or where their classes are, or what they have on a given day.",
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   {

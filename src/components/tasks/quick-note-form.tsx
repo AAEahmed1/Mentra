@@ -20,6 +20,7 @@ export function QuickNoteForm({ taskId }: { taskId: string }) {
   return (
     <form
       key={form.formKey}
+      method="post"
       onSubmit={form.onSubmit}
       className="flex flex-col gap-2"
     >
@@ -51,7 +52,7 @@ export function QuickNoteForm({ taskId }: { taskId: string }) {
           type="submit"
           variant="outline"
           size="sm"
-          disabled={form.isPending}
+          disabled={!form.isHydrated || form.isPending}
         >
           {form.isPending ? "Saving…" : "Save note"}
         </Button>

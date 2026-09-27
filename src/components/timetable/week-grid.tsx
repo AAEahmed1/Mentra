@@ -1,4 +1,9 @@
-import { formatClockTime, MEETING_KIND_LABELS, weekdayLabel } from "@/lib/meeting";
+import {
+  describeMeeting,
+  formatClockTime,
+  MEETING_KIND_LABELS,
+  weekdayLabel,
+} from "@/lib/meeting";
 import type { TimetableMeeting, WeekLayout } from "@/lib/timetable";
 import { cn } from "@/lib/utils";
 
@@ -24,21 +29,27 @@ export function WeekGrid({
       className="hidden sm:grid"
       style={{ gridTemplateColumns: `3.5rem repeat(${layout.days.length}, minmax(0, 1fr))` }}
     >
-      <div />
+      <div aria-hidden="true" />
       {layout.days.map((day) => (
         <div
           key={day.weekday}
+          aria-hidden="true"
           className={cn(
             "border-b-2 border-rule-strong pb-2 text-center text-xs font-semibold tracking-[0.12em] uppercase",
             day.weekday === todayWeekday ? "text-now" : "text-muted-foreground"
           )}
         >
           {weekdayLabel(day.weekday, "short")}
-          {day.weekday === todayWeekday && <span className="sr-only"> (today)</span>}
         </div>
       ))}
 
-      <div className="relative" style={{ height: `${height}rem` }}>
+      {/*
+        The day-header row above and the hour labels below are both decorative
+        once each block below states its own weekday and course name in
+        screen-reader text: the header row otherwise gives the day the block
+        sits under, and this column otherwise gives no accessible name at all.
+      */}
+      <div aria-hidden="true" className="relative" style={{ height: `${height}rem` }}>
         {layout.hours.map((minute) => (
           <span
             key={minute}
@@ -71,6 +82,7 @@ export function WeekGrid({
           {day.placed.map(({ meeting, lane, lanes, topPercent, heightPercent }) => (
             <div
               key={meeting.id}
+              title={`${describeMeeting(meeting)} · ${meeting.course.name}`}
               className="absolute overflow-hidden rounded-xs border-l-2 border-primary bg-muted px-1.5 py-1 text-xs"
               style={{
                 top: `${topPercent}%`,
@@ -79,12 +91,17 @@ export function WeekGrid({
                 width: `${100 / lanes}%`,
               }}
             >
+              {/* The visible text abbreviates to the course code and splits
+                  time from kind/location onto separate lines; screen readers
+                  get the day and full course name up front instead. */}
+              <span className="sr-only">
+                {weekdayLabel(day.weekday, "long")}, {meeting.course.name},{" "}
+              </span>
               <p className="truncate font-medium">{meeting.course.code ?? meeting.course.name}</p>
               <p data-figures className="truncate text-muted-foreground">
                 {formatClockTime(meeting.startMinute)}–
                 {formatClockTime(meeting.startMinute + meeting.durationMinutes)}
-              </p>
-              <p className="truncate text-muted-foreground">
+                {" · "}
                 {[MEETING_KIND_LABELS[meeting.kind], meeting.location].filter(Boolean).join(" · ")}
               </p>
             </div>
