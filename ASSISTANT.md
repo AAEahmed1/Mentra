@@ -126,7 +126,7 @@ The system prompt is rebuilt for every request from two things the model must no
 
 - **Delete a course, a term or a memory.** `deleteCourse`, `deleteSemester` and `deleteMemory` exist as services but have no tools. A course or term takes real work with it, and forgetting is the student's decision, so those stay in the interface.
 - **Edit a course, a term or a memory.** `updateCourse` and `updateSemester` exist but have no tools. There is no memory update at all.
-- **Change a task's course or description, clear its due date, or set topics to review.** `update_task` accepts none of these.
+- **Change a task's course, description or type, clear its due date, or set topics to review.** `update_task` accepts none of these.
 - **Unfile a note.** `update_note` can move a note to a different course or piece of work, but not clear the link.
 - **Read or change the student's profile or account.** There is no tool for names, program, institution, email, password or deleting the account.
 - **Touch grades.** There is no grade field in the schema.

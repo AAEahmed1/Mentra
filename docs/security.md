@@ -26,8 +26,8 @@ How Mentra protects student data, what leaves the app, and the known gaps. Mentr
 There is one role: a student, who can only see and change their own data. It is enforced in three places:
 
 1. **Every protected page and server action** calls `requireUserId()`, which reads the session and redirects to `/sign-in` without one. The assistant route reads the session with `getSession()` and answers `401` without one.
-2. **Every service query is scoped to that user.** Rows are loaded, updated and deleted with `{ id, userId }` (courses through their semester's owner), so another student's id behaves exactly like a missing one and reveals nothing.
-3. **Linked ids are checked.** When a form or tool attaches a note or work to a course or task, the service verifies the target belongs to the same student before writing.
+2. **Every service query is scoped to that user.** Rows are loaded, updated and deleted with `{ id, userId }` (courses through their semester's owner, class times through `course: { semester: { userId } }`), so another student's id behaves exactly like a missing one and reveals nothing.
+3. **Linked ids are checked.** When a form or tool attaches a note or work to a course or task, the service verifies the target belongs to the same student before writing. Creating a class time is the same check one level down: the course it is added to must belong to the student's own semester.
 
 Integration tests cover refusals across two students for each service.
 
@@ -82,7 +82,7 @@ What is **not** scrubbed: exception messages and stack traces. Avoid putting stu
 | Recipient | What is sent | When |
 | --- | --- | --- |
 | Supabase | Everything Mentra stores | Always (the database) |
-| OpenAI | The student's memories, the current conversation's recent messages, and whatever the tools read: courses, work, full note bodies | Each assistant turn, when `OPENAI_API_KEY` is set |
+| OpenAI | The student's memories, the current conversation's recent messages, and whatever the tools read: courses, work, full note bodies, class times | Each assistant turn, when `OPENAI_API_KEY` is set |
 | Google | The OAuth exchange; Google returns name, email and avatar | Google sign-in only |
 | Sentry | Scrubbed error events and performance traces | When `NEXT_PUBLIC_SENTRY_DSN` is set |
 | Vercel | Request logs, including `console.error` output from failed assistant turns | Always (hosting) |
@@ -91,7 +91,7 @@ What is **not** scrubbed: exception messages and stack traces. Avoid putting stu
 
 - **See what the assistant has learned** and forget any of it on "What Mentra knows" (`/privacy`).
 - **Delete conversations** from the Chats pages.
-- **Delete the account.** Typing `DELETE` removes the account and everything in it in one transaction: terms, courses, work, notes, memories, conversations, messages, sessions and sign-in accounts.
+- **Delete the account.** Typing `DELETE` removes the account and everything in it in one transaction: terms, courses (and their class times, which cascade with them), work, notes, memories, conversations, messages, sessions and sign-in accounts.
 
 Data export is not implemented.
 

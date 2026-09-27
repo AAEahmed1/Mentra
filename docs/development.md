@@ -11,7 +11,7 @@ How to run Mentra locally, test it, and change it safely.
 
 ## Prerequisites
 
-- **Node.js 20.9 or newer** (Next.js 16's minimum). Node 22 is used in development.
+- **Node.js 20.19 or newer.** Next.js 16 itself only needs 20.9, but Prisma 7.10.0 requires `^20.19 || ^22.12 || >=24.0` (see its `package.json` `engines`), which sets the effective minimum. Node 22 is used in development.
 - **npm**, which is what `package-lock.json` is for.
 - No Docker and no system PostgreSQL are needed. The local database is a [Prisma dev server](https://www.prisma.io/docs/postgres/database/local-development), started from the Prisma CLI that is already a project dependency.
 
@@ -108,7 +108,7 @@ What is covered:
 
 | Area | Kind | Examples |
 | --- | --- | --- |
-| Pure logic in `src/lib/*.test.ts` | Unit | Ranking order and factors, the "why" sentence, overdue rules, time zones, due labels, greeting, validation schemas (including edit forms that clear fields), available minutes, Sentry scrubbing, the client thread store, the landing sample |
+| Pure logic in `src/lib/*.test.ts` | Unit | Ranking order and factors, the "why" sentence, overdue rules, time zones, due labels, greeting, validation schemas (including edit forms that clear fields and class-time validation), the timetable (`pickTerm`, `layoutWeek`), coming up, available minutes, Sentry scrubbing, the client thread store, the landing sample |
 | Services in `src/lib/services/*.test.ts` | Integration, real database | Ownership refusals across students, cascades and set-null behaviour, account deletion leaving no orphans, message ordering and the 40-message window, profile updates |
 | Row level security (`rls.test.ts`) | Integration | Every table in `public` has RLS enabled |
 | Assistant in `src/lib/ai/*.test.ts` | Unit and integration | Tool schemas never accept `userId`, argument validation, the round limit, tool failures, the system prompt's date and memory sections, tool execution against the database |
@@ -121,7 +121,7 @@ Not covered by automated tests: pages and components, server actions, the assist
 npm run seed:demo -- --email you@example.com
 ```
 
-Fills an **existing** account with a nursing student's term: one semester, five courses with a weekly class time each, twelve pieces of work (overdue, due today, upcoming, undated, in progress, completed, two quizzes), three notes and four memories. Dates are relative to today on this computer's calendar, so the dashboard always has something in every state. Add `--clear` to remove the data instead.
+Fills an **existing** account with a nursing student's term: one semester, five courses with a weekly class time each (two of them meeting twice a week), twelve pieces of work (overdue, due today, upcoming, undated, in progress, completed, two quizzes), three notes and four memories. Dates are relative to today on this computer's calendar, so the dashboard always has something in every state. Add `--clear` to remove the data instead.
 
 > **Warning:** every run first deletes that account's terms, courses, class times, work, notes and memories. The script refuses to run unless `DATABASE_URL` is a local database; `--allow-remote` overrides that, loudly. Use it only on a throwaway account.
 

@@ -173,7 +173,7 @@ Two consequences of the hand-edited conversation migration: backfilled conversat
 
 Supabase exposes every table in the `public` schema through its Data API (PostgREST), reachable with the project's anon key, which is designed to be public. Without row level security, anyone holding that key could read and write every table, including password hashes and OAuth tokens in `account`, session tokens in `session`, and every student's notes and conversations.
 
-The migration `20260913040000_enable_row_level_security` runs `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` on all twelve tables that existed then, including `_prisma_migrations`; `rate_limit` enables it in its own migration. It creates **no policies**. With RLS on and no policies, Postgres returns no rows and allows no writes for any role that is not the table owner and lacks `BYPASSRLS`, which on Supabase includes `anon` and `authenticated`. The Data API is therefore closed.
+The migration `20260913040000_enable_row_level_security` runs `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` on all twelve tables that existed then, including `_prisma_migrations`; `rate_limit` and `course_meeting` each enable it in their own migration instead. It creates **no policies**. With RLS on and no policies, Postgres returns no rows and allows no writes for any role that is not the table owner and lacks `BYPASSRLS`, which on Supabase includes `anon` and `authenticated`. The Data API is therefore closed.
 
 Mentra itself is unaffected. It never uses PostgREST; every query goes through Prisma as the role that owns the tables, and owners bypass RLS unless `FORCE ROW LEVEL SECURITY` is set, which it is not.
 
@@ -205,16 +205,17 @@ Prisma Migrate needs session-level advisory locks, which the transaction pooler 
 All database access from pages, server actions and the assistant goes through the functions in [`src/lib/services/`](../src/lib/services). The rules they follow:
 
 - **The caller supplies `userId` from the session.** Services trust it. Pages and actions get it from `requireUserId()`; the assistant route binds it once per request.
-- **Ownership is enforced in the query.** Owned models filter on `userId`; courses filter on `semester: { userId }`. Updates and deletes use `updateMany` or `deleteMany` with `{ id, userId }` and treat a count of zero as `not_found`, so another student's row is indistinguishable from a missing one.
+- **Ownership is enforced in the query.** Owned models filter on `userId`; courses filter on `semester: { userId }`, and class times filter on `course: { semester: { userId } }`, since a `CourseMeeting` has no `userId` of its own. Updates and deletes use `updateMany` or `deleteMany` with `{ id, userId }` (or the equivalent nested filter) and treat a count of zero as `not_found`, so another student's row is indistinguishable from a missing one.
 - **Linked ids are verified.** When a form or tool supplies a `courseId` or `taskId`, the service checks it belongs to the same student before writing.
 - **Results are explicit.** Functions that can fail for expected reasons return `{ success: true, data }` or `{ success: false, error: "<code>" }`. Plain creates and lists return rows directly. Input types come from the zod schemas in `src/lib/*.ts`, which have already trimmed strings and checked lengths.
-- **Updates distinguish "leave" from "clear".** In update types (`TaskUpdate`, `NoteUpdate`, `CourseUpdate`), `undefined` leaves a field as it is and `null` clears an optional one, which is how an edit form unfiles work from a course or empties a due date.
+- **Updates distinguish "leave" from "clear".** In update types (`TaskUpdate`, `NoteUpdate`, `CourseUpdate`, `MeetingUpdateInput`), `undefined` leaves a field as it is and `null` clears an optional one, which is how an edit form unfiles work from a course, empties a due date, or clears a class time's location.
 - **Races report, not throw.** If a row is deleted between a check and a write, the service returns the same `not_found` (or `course_not_found`, `has_courses`) the check would have, instead of letting a Prisma error escape.
 
 | Service | Functions | Notes |
 | --- | --- | --- |
 | `semester.ts` | `createSemester`, `listSemestersForUser` (newest start first), `updateSemester`, `deleteSemester` | Delete returns `has_courses` while courses exist |
 | `course.ts` | `createCourse`, `listCoursesForSemester`, `listCoursesForUser` (by name), `updateCourse`, `deleteCourse` | Create checks the semester belongs to the student |
+| `meeting.ts` | `createMeetings` (one row per weekday ticked, written together in one `$transaction`; checks the course belongs to the student first and maps a foreign key violation to `not_found`), `listMeetingsForUser` (weekday then start time, each row including its course's id, name, code and `semesterId`), `updateMeeting`, `deleteMeeting` | Owned through `course: { semester: { userId } }` |
 | `task.ts` | `createTask`, `listTasksForUser` (newest first), `updateTask`, `completeTask`, `deleteTask` | Create and update check the course belongs to the student; new work always starts `not_started`; `completeTask` sets `completed` and optionally `actualDuration` |
 | `note.ts` | `createNote`, `listNotesForUser`, `searchNotesForUser`, `updateNote`, `deleteNote` | Checks course and task links on create and update; search is a case-insensitive `contains` on title or body |
 | `memory.ts` | `createMemory`, `listMemoriesForUser` (newest first), `listRecentMemoriesForUser`, `deleteMemory` | No update; the recent list returns a bounded page plus the total, for the assistant's prompt |

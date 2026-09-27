@@ -83,7 +83,7 @@ Without `OPENAI_API_KEY` the app works normally, but every assistant message ret
 | File | What it controls |
 | --- | --- |
 | `next.config.ts` | Wraps the Next config with `withSentryConfig`: source map upload, the `/monitoring` tunnel route |
-| `prisma.config.ts` | Schema and migrations paths; the CLI's database URL |
+| `prisma.config.ts` | Schema and migrations paths; the CLI's database URL and, from `SHADOW_DATABASE_URL`, its shadow database URL |
 | `prisma/schema.prisma` | Data model; generates the client into `src/generated/prisma` |
 | `vitest.config.ts` | Test database guard, `@/` alias, serial test files |
 | `tsconfig.json` | Strict TypeScript; `@/*` maps to `src/*` |

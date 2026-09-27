@@ -8,9 +8,9 @@ Mentra is a web app that keeps a student's courses, deadlines and notes in one p
 
 ## Features
 
-- **Today.** A dashboard showing the term as a timeline, the single most important piece of work with a countdown, and the reason it was chosen, such as "Recommended because it's 4 days overdue and you estimated 75 min." Pick how much time you have (15 minutes to 90) and work that fits moves up.
+- **Today.** A dashboard showing the term as a timeline, the single most important piece of work with a countdown, and the reason it was chosen, such as "Recommended because it's 4 days overdue and you estimated 75 min." Pick how much time you have (15 minutes to 90) and work that fits moves up. Below that, Classes today and the next two weeks of work Coming up.
 - **Explainable ranking.** Ordinary, tested code decides the order, not a model: overdue work first, then work due within three days, then later work, then undated work, ordered within each group by fit to your time, priority and date.
-- **Courses and terms.** Organise courses by semester, with codes, professors and credits.
+- **Courses and terms.** Organise courses by semester, with codes, professors and credits, each course's weekly class times and its coursework.
 - **Timetable.** The running term's class times as a week, drawn to scale, with a per-day list on phones and a switcher when there is more than one term.
 - **Work.** Tasks, assignments, quizzes and exams with due dates, priorities, estimates, statuses and topics to review. Overdue is worked out for you.
 - **Notes.** Searchable notes, filed under a course and attached to the work they're about.
@@ -51,7 +51,7 @@ More in the [user guide](docs/user-guide.md).
 
 ## Quick start
 
-Requires Node.js 20.9 or newer. No Docker is needed; the local database runs through the Prisma CLI.
+Requires Node.js 20.19 or newer — Next.js 16 itself only needs 20.9, but Prisma 7.10.0 requires `^20.19 || ^22.12 || >=24.0`, which sets the effective minimum. No Docker is needed; the local database runs through the Prisma CLI.
 
 ```bash
 git clone git@github.com:AAEahmed1/Mentra.git
@@ -115,6 +115,7 @@ The full walkthrough is in [docs/development.md](docs/development.md).
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | PostgreSQL connection used by the app |
 | `DIRECT_URL` | Production | Connection used for migrations (Supabase session pooler) |
+| `SHADOW_DATABASE_URL` | Local only | The empty shadow database `prisma migrate dev` replays migrations into — the `mentra` server's database port plus one (see `.env.example`) |
 | `TEST_DATABASE_URL` | For tests | A separate database the tests can write to |
 | `BETTER_AUTH_SECRET` | Yes | Signs sessions |
 | `BETTER_AUTH_URL` | Yes | The app's public origin |
