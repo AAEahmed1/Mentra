@@ -12,11 +12,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const initialState: PasswordActionState = { errors: [], saved: false };
+/**
+ * The action's state plus how many changes have succeeded. `saved` alone can't
+ * key the form: two successful changes in a row leave it true, so the form
+ * would not remount and the second password would stay in the fields.
+ */
+type CountedState = PasswordActionState & { successes: number };
+
+const initialState: CountedState = { errors: [], saved: false, successes: 0 };
+
+async function countedChange(
+  previous: CountedState,
+  formData: FormData
+): Promise<CountedState> {
+  const { errors, saved } = previous;
+  const next = await changePasswordAction({ errors, saved }, formData);
+  return { ...next, successes: previous.successes + (next.saved ? 1 : 0) };
+}
 
 export function ChangePasswordForm() {
   const [state, formAction, isPending] = useActionState(
-    changePasswordAction,
+    countedChange,
     initialState,
   );
   const [, startTransition] = useTransition();
@@ -34,9 +50,9 @@ export function ChangePasswordForm() {
   }
 
   return (
-    // Keyed on success so the fields empty once the password has changed.
+    // Keyed on each success so the fields empty once the password has changed.
     <form
-      key={state.saved ? "saved" : "editing"}
+      key={state.successes}
       method="post"
       onSubmit={onSubmit}
       className="flex max-w-md flex-col gap-4"
