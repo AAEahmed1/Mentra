@@ -6,6 +6,8 @@ The rules that decide what Mentra shows: how work is ranked, when it counts as o
 - [The "why" sentence](#the-why-sentence)
 - [Status and overdue](#status-and-overdue)
 - [Dates and time zones](#dates-and-time-zones)
+- [Timetable](#timetable)
+- [Coming up](#coming-up)
 - [Validation rules](#validation-rules)
 - [Server actions](#server-actions)
 - [Client helpers](#client-helpers)
@@ -106,6 +108,44 @@ A clock `Date` is only for comparing and displaying days and hours. Never store 
 | `buildSampleTerm(now)` | `landing-sample.ts` | The landing page's example term: five architecture courses and eight pieces of work dated relative to today, ranked with the real engine |
 
 The greeting uses the hour on the student's clock.
+
+## Timetable
+
+Class times are stored as minutes since midnight on ISO weekdays (Monday = 1 through Sunday = 7) on the student's calendar, never converted between time zones. [`src/lib/timetable.ts`](../src/lib/timetable.ts) works out which term's week to show and what classes the student has today.
+
+`pickTerm(terms, now, requestedId?)` chooses a term in this order:
+
+1. The term explicitly requested by `id`, if given and found.
+2. The term running today (between its start and end dates inclusive).
+3. The next term to start (the break before a term is when a timetable gets entered).
+4. The term that ended most recently (after all terms have finished).
+5. `null` if there are no terms.
+
+`classesToday(meetings, terms, now)` returns today's classes from terms that are running today, sorted by start time. Only meetings whose course belongs to a running term are included.
+
+`layoutWeek(meetings)` places classes on a grid:
+
+- **Time window:** The week shown spans 08:00 to 18:00 by default, but stretches to whole hours around any class outside that range (e.g., a 7:30 AM class shifts the start to 07:00, a 19:30 class shifts the end to 20:00).
+- **Overlapping classes:** When classes overlap, they share the day's width in lanes, left to right, first come first served. Each day reports how many lanes are needed.
+- **Weekend:** Monday through Friday are always shown. Saturday and Sunday appear together only when at least one class is scheduled on either day.
+
+Helper functions `isoWeekday(now)` and `minuteOfDay(now)` extract the day of the week and minutes since midnight from a student clock.
+
+## Coming up
+
+Work due in the next 14 days, grouped by day. [`src/lib/coming-up.ts`](../src/lib/coming-up.ts) decides what work to show and how to order it.
+
+`comingUp(tasks, now, days?)` returns open work due today through the next `days` days (default `COMING_UP_DAYS = 14`). A task is included if:
+
+- Its status is open (`not_started`, `in_progress`, or `paused`).
+- It has a due date that is today or in the future (overdue work is left out on purpose: it already leads the dashboard's "overdue" plate, and listing it again under a date that has passed says nothing new).
+- The due date is within the window.
+
+Same-day work is ordered by type — exams first, then quizzes, assignments, and tasks — and ties are broken by title.
+
+`dayHeading(daysUntil, date)` formats the day: "Today", "Tomorrow", or the date as "Tue, Sep 29".
+
+`courseworkFor(tasks, courseId)` returns a course's open work, soonest due first, undated tasks at the end.
 
 ## Validation rules
 
