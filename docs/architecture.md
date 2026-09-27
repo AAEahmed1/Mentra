@@ -119,8 +119,8 @@ Opening `/dashboard`:
 
 1. The root layout (`src/app/layout.tsx`) calls `getSession()`. For a signed-in student it also loads their most recent conversation, so the assistant panel is ready on every page.
 2. The page calls `requireUserId()`, which redirects to `/sign-in` when there is no session.
-3. It reads the student's clock with `getStudentTime()`, loads their work, courses and notes through services, and ranks the work with `rankTasks()`, using `?minutes=` if present.
-4. It renders the term table, today's entry and the ranked list as server components. Nothing on the dashboard fetches data on the client.
+3. It reads the student's clock with `getStudentTime()`, loads their work, courses, notes, class times and terms through services, and ranks the work with `rankTasks()`, using `?minutes=` if present.
+4. It works out `classesToday()` and `comingUp()` from those class times, terms and work, and renders the term table, today's entry, the ranked list, a **Classes today** list and a **Coming up** list, all as server components. Nothing on the dashboard fetches data on the client.
 
 ### Changing something
 
@@ -129,7 +129,7 @@ Adding a piece of work from `/tasks`:
 1. `CreateTaskForm` submits to `createTaskAction` through `useQuickForm`, which calls the action from the form's `onSubmit` so a refused submission keeps what was typed.
 2. The action calls `requireUserId()`, then `parseTaskInput()`, which trims text, checks lengths and numbers, turns blanks into `undefined` and applies defaults.
 3. `createTask()` checks that the chosen course belongs to the student, then inserts the row.
-4. The action revalidates `/tasks`, `/dashboard` and `/notes`, and returns `{ errors: [] }`. The form clears by remounting and the page re-renders with the new row.
+4. The action revalidates `/tasks`, `/dashboard`, `/notes` and `/courses`, and returns `{ errors: [] }`. The form clears by remounting and the page re-renders with the new row.
 
 ### Asking the assistant
 

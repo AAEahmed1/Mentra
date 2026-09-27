@@ -101,13 +101,13 @@ A dark theme is available everywhere:
 
 ![The assistant panel](screenshots/assistant.jpg)
 
-The **Ask Mentra** button in the corner of every signed-in page opens the assistant. It reads your courses, work, notes and what it has learned about you before answering, and it can file things for you:
+The **Ask Mentra** button in the corner of every signed-in page opens the assistant. It reads your courses, work, notes, class times and what it has learned about you before answering, and it can file things for you:
 
 - "What should I do tonight?" or "I only have 45 minutes" gets the same ranking as Today, with the reasons.
 - You can ask up to 30 questions an hour.
 - Mentioning work, a note or something about yourself in passing ("the lab report is due Friday") gets it filed, and the assistant says what it recorded.
 - It can complete, change and delete work and notes, add terms and courses, and remember facts about you.
-- It cannot delete a course, a term or a memory, change your profile or account, see grades, or read other students' data.
+- It cannot delete a course, a term or a memory, add, change or remove class times, change your profile or account, see grades, or read other students' data.
 
 The exact list of abilities and limits is in [ASSISTANT.md](../ASSISTANT.md). The assistant needs `OPENAI_API_KEY` to be configured; without it, sending a message shows "The assistant isn't configured yet".
 

@@ -97,6 +97,8 @@ Shared pieces worth knowing:
 - **`DurationBar`** draws an estimate as a bar on a 240-minute scale, with the minutes written beside it.
 - **`TimeAvailable`** renders the Any, 15m, 30m, 1h and 90m links that set `?minutes=`.
 - **`TermScore`** is the dashboard timeline: seven days back to 21 days ahead, one row per course with dated work in that window, items sized at 90 minutes per day of width, a green line for today, and a hover or focus card per item. It is hidden below 768px.
+- **`WeekGrid`** (`timetable/week-grid.tsx`) draws the running term's week to scale, at 3.5rem per hour: each class is as tall as it is long, and classes that overlap share their day's width in lanes, left to right. Today's column is banded when the term shown is running today. Each block's visible text is the course code; a screen reader also gets the weekday and the full course name, and hovering or focusing shows the full class description in a title tooltip. A class of 60 minutes or more is tall enough to give its kind and location their own line; a shorter one folds them onto the time line instead. Hidden below `sm` (640px).
+- **`DayList`** (`timetable/day-list.tsx`) is `WeekGrid`'s narrow-screen counterpart: only days that have a class are listed, each headed by its weekday name, with today's marked "· Today". Shown only below `sm`.
 - **`ClassesToday`** (`timetable/classes-today.tsx`) lists today's classes on Today in time order, with a Timetable link in its running head. A class whose end time has passed is set in grey. It only renders when a term is running today and at least one class falls on it.
 - **`ComingUp`** lists open work due today through 14 days out, one heading per day (`comingUp` in `src/lib/coming-up.ts`), each item showing its task type and course. Overdue work and completed work are left out — overdue work already leads Today in the slipped plate.
 - **`FiledRow`** and friends (`filed-row.tsx`) lay out list rows. On screens 768px and wider with a mouse, actions appear on hover or keyboard focus; on touch devices they stay visible. A row can print an `error` from a row action. `FormErrors` and `EditActions` are the edit form's error box and buttons. `detail` opens a full-width panel beneath the row — `CourseRow` uses it for `CoursePanel`, its class times and coursework.
@@ -158,7 +160,7 @@ What is in place:
 
 | Width | Changes |
 | --- | --- |
-| Under 640px | Secondary table columns fold under the title; the landing page hides its top Sign in link |
+| Under 640px | Secondary table columns fold under the title; the landing page hides its top Sign in link; the Timetable page hides `WeekGrid` and shows `DayList` instead; the add-class-time form collapses to one column |
 | Under 768px | Sidebar becomes a drawer under a sticky top bar; the term timeline is hidden; row actions are always visible; extra bottom padding leaves room for the assistant button |
 | 768px and up | Sticky, collapsible sidebar; row actions appear on hover or focus when a mouse is present, and stay visible on touch screens |
 

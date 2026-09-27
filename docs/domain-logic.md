@@ -113,10 +113,12 @@ The greeting uses the hour on the student's clock.
 
 Class times are stored as minutes since midnight on ISO weekdays (Monday = 1 through Sunday = 7) on the student's calendar, never converted between time zones. [`src/lib/timetable.ts`](../src/lib/timetable.ts) works out which term's week to show and what classes the student has today.
 
+`termRunsOn(term, now)` is what "running" means throughout: whether `now`'s calendar day falls between the term's start and end dates, inclusive. `pickTerm` and `classesToday` both use it, and so do the timetable page (to decide whether to band a column as today) and the assistant's `get_timetable` tool (as each class's `termRunningToday`).
+
 `pickTerm(terms, now, requestedId?)` chooses a term in this order:
 
 1. The term explicitly requested by `id`, if given and found.
-2. The term running today (between its start and end dates inclusive).
+2. The term running today (`termRunsOn`).
 3. The next term to start (the break before a term is when a timetable gets entered).
 4. The term that ended most recently (after all terms have finished).
 5. `null` if there are no terms.
@@ -125,7 +127,7 @@ Class times are stored as minutes since midnight on ISO weekdays (Monday = 1 thr
 
 `layoutWeek(meetings)` places classes on a grid:
 
-- **Time window:** The week shown spans 08:00 to 18:00 by default, but stretches to whole hours around any class outside that range (e.g., a 7:30 AM class shifts the start to 07:00, a 19:30 class shifts the end to 20:00).
+- **Time window:** The week shown spans 08:00 to 18:00 by default, but stretches to whole hours around any class outside that range (e.g., a 7:30 AM class shifts the start to 07:00, a 19:30 class shifts the end to 20:00), and the end is capped at 24:00 regardless of how late a class runs.
 - **Overlapping classes:** When classes overlap, they share the day's width in lanes, left to right, first come first served. Each day reports how many lanes are needed.
 - **Weekend:** Monday through Friday are always shown. Saturday and Sunday appear together only when at least one class is scheduled on either day.
 
@@ -133,9 +135,9 @@ Helper functions `isoWeekday(now)` and `minuteOfDay(now)` extract the day of the
 
 ## Coming up
 
-Work due in the next 14 days, grouped by day. [`src/lib/coming-up.ts`](../src/lib/coming-up.ts) decides what work to show and how to order it.
+Work due today or in the next 14 days, grouped by day. [`src/lib/coming-up.ts`](../src/lib/coming-up.ts) decides what work to show and how to order it.
 
-`comingUp(tasks, now, days?)` returns open work due today through the next `days` days (default `COMING_UP_DAYS = 14`). A task is included if:
+`comingUp(tasks, now, days?)` returns open work due today through `days` days ahead, inclusive of both ends — 15 calendar days when `days` is the default (`COMING_UP_DAYS = 14`). A task is included if:
 
 - Its status is open (`not_started`, `in_progress`, or `paused`).
 - It has a due date that is today or in the future (overdue work is left out on purpose: it already leads the dashboard's "overdue" plate, and listing it again under a date that has passed says nothing new).
@@ -184,6 +186,18 @@ The edit form (`parseTaskUpdate`) also accepts `status`, which must be one of th
 - `code` optional, up to 30 characters; `professor` optional, up to 120.
 - `credits` optional whole number from 0 to 999.
 
+### Class times (`meeting.ts`)
+
+| Field | Rule |
+| --- | --- |
+| `kind` | `lecture`, `lab`, `tutorial`, `seminar` or `other`; default `lecture` |
+| `weekdays` | At least one; each 1 (Monday) to 7 (Sunday); ticking the same day twice de-duplicates it, and the list is sorted |
+| `startMinute` | Required, parsed from a clock time such as `09:30` (`HH:MM`) |
+| `durationMinutes` | Whole number of minutes, 5 to 720 |
+| `location` | Optional, up to 120 characters |
+
+A class must end by midnight: if the start time plus the duration would pass 24:00, the error is reported against `durationMinutes` rather than the start time. The add-class-time form submits one `weekdays` list and gets one row per day back; the edit form (`parseMeetingUpdate`) takes a single `weekday` instead, since editing changes one row at a time, and a blank `location` there clears it, rather than leaving it unset as it would on create.
+
 ### Notes (`note.ts`)
 
 - `title` required, up to 200 characters; `body` required, up to 20,000.
@@ -225,7 +239,8 @@ All mutations from the interface go through `"use server"` functions in [`src/li
 | --- | --- | --- |
 | `semester.ts` | `createSemesterAction`, `deleteSemesterAction` | `/courses`, `/dashboard` |
 | `course.ts` | `createCourseAction`, `updateCourseAction`, `deleteCourseAction` | `/courses`, `/dashboard`, `/tasks`, `/notes` |
-| `task.ts` | `createTaskAction`, `updateTaskAction`, `completeTaskAction`, `deleteTaskAction` | `/tasks`, `/dashboard`, `/notes` |
+| `meeting.ts` | `createMeetingAction`, `updateMeetingAction`, `deleteMeetingAction` | `/timetable`, `/courses`, `/dashboard` |
+| `task.ts` | `createTaskAction`, `updateTaskAction`, `completeTaskAction`, `deleteTaskAction` | `/tasks`, `/dashboard`, `/notes`, `/courses` |
 | `note.ts` | `createNoteAction`, `updateNoteAction`, `deleteNoteAction` | `/notes`, `/dashboard`, `/tasks` |
 | `memory.ts` | `createMemoryAction`, `deleteMemoryAction` | `/privacy` |
 | `account.ts` | `deleteAccountAction` | Redirects to `/sign-in` |
@@ -239,9 +254,11 @@ Returned state shapes:
 - Profile and password actions return `{ errors: string[], saved: boolean }`, so the form can show "Saved."
 - Semester and account deletion return `{ error: string | null }`.
 - Row buttons (complete, remove, forget) return `RowActionResult`, `{ error: string | null }` from [`action-state.ts`](../src/lib/action-state.ts), and the row prints the error when something didn't happen (for example, it was already removed).
+- `createMeetingAction` and `updateMeetingAction` return `{ errors: string[] }`, like the other form actions; `deleteMeetingAction` returns `RowActionResult`.
 
 Notable behaviour:
 
+- **Adding a class time requires a course.** `createMeetingAction` refuses with "Pick a course" if no `courseId` is posted, before the rest of the form is even parsed.
 - **Deleting an account** requires typing `DELETE` exactly. `deleteAccount()` removes notes, work, memories, courses, semesters and the user in one transaction; sessions, sign-in accounts, conversations and messages go with the user by cascade.
 - **Changing a password** calls Better Auth's `changePassword` with `revokeOtherSessions: true`. Other devices are signed out and this device gets a fresh session. A wrong current password shows "Current password is incorrect."
 
@@ -251,10 +268,10 @@ Notable behaviour:
 
 - **`useHydrated()`** reports whether React has hydrated yet. A form that submits via `onSubmit` has no working submit path until hydration attaches the handler, so `useQuickForm` forms and the `useActionState` forms that submit through `onSubmit` gate their submit button on this and carry `method="post"`, in case a submit slips through before then. `useInlineEdit` forms need neither: they only mount after a click on the client.
 - **`useInlineEdit(action)`** opens and closes a row's edit form, keeping it open with errors when saving fails.
-- **`useRowAction(action)`** runs a one-field action, such as Complete or Remove, in a transition, and keeps the action's `error` for the row to show.
+- **`useRowAction(action)`** runs a one-field action, such as Complete or Remove, in a transition, and keeps the action's `error` for the row to show. It has no form behind it: `run(field, value)` builds the single-entry `FormData` itself and calls the action directly.
 - **`useQuickForm(action)`** clears a small form after a successful save by remounting it, and keeps the typed text when saving fails.
 
-All three submit through `onSubmit` rather than a form's `action` prop: React 19 resets every uncontrolled field once a `<form action={fn}>`'s action settles, regardless of what it returned, which would erase a refused submission's input. `onSubmit` prevents the default submit and builds the `FormData` itself, so nothing is reset out from under the student.
+`useInlineEdit` and `useQuickForm` submit through `onSubmit` rather than a form's `action` prop: React 19 resets every uncontrolled field once a `<form action={fn}>`'s action settles, regardless of what it returned, which would erase a refused submission's input. `onSubmit` prevents the default submit and builds the `FormData` itself, so nothing is reset out from under the student.
 
 [`ConfirmAction`](../src/components/confirm-action.tsx) wraps removals: the first press asks "Remove for good?", the second carries it out, and Escape or **Keep** backs out.
 
